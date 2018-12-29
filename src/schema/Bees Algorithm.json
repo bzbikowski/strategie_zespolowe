@@ -1,0 +1,28 @@
+{
+  "elements": [
+    {
+      "name": "Number of generations",
+      "type": "plain_text"
+    },
+    {
+      "name": "Number of scouts",
+      "type": "plain_text"
+    },
+    {
+      "name": "Number of chosen places from all visited",
+      "type": "plain_text"
+    },
+    {
+      "name": "Number of best places from all chosen",
+      "type": "plain_text"
+    },
+    {
+      "name": "Number of reqruits for best places",
+      "type": "plain_text"
+    },
+    {
+      "name": "Number of reqruits for other places",
+      "type": "plain_text"
+    }
+  ]
+}

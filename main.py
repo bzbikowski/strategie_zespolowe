@@ -1,4 +1,9 @@
-from algorithm import BeesAlgorithm
+import sys
+
+from PySide2.QtWidgets import QApplication
+
+from lib.algorithms import BeesAlgorithm
+from src.window import Window
 
 
 def main():
@@ -12,4 +17,8 @@ def fun1(*args):
 
 
 if __name__ == "__main__":
-    main()
+    qApp = QApplication(sys.argv)
+    app = Window()
+    app.resize(1024, 768)
+    app.show()
+    sys.exit(qApp.exec_())
