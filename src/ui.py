@@ -6,6 +6,7 @@ from PySide2.QtWebEngineWidgets import QWebEngineView
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QPlainTextEdit
 
 import lib.algorithms as alg
+from problem import Problem
 
 
 class Ui(QWidget):
@@ -26,6 +27,8 @@ class Ui(QWidget):
         self.mainHelpLayout = None
         self.parametersFullLayout = None
         self.finalButton = None
+        self.problems = None
+        self.problem = None
 
         self.setupUI()
 
@@ -81,8 +84,21 @@ class Ui(QWidget):
         self.problemLayout = QVBoxLayout()
         self.parametersFullLayout.addLayout(self.problemLayout)
 
-        self.test = QPlainTextEdit("Kappa")
-        self.problemLayout.addWidget(self.test)
+        self.problemList = QListWidget()
+        self.problemLayout.addWidget(self.problemList)
+        self.makeProblemsList()
+
+        self.problemOptionLayout = QHBoxLayout()
+        self.problemLayout.addLayout(self.problemOptionLayout)
+
+        self.addProblemButton = QPushButton("Dodaj")
+        self.problemOptionLayout.addWidget(self.addProblemButton)
+
+        self.editProblemButton = QPushButton("Edytuj")
+        self.problemOptionLayout.addWidget(self.editProblemButton)
+
+        self.delProblemButton = QPushButton("Usun")
+        self.problemOptionLayout.addWidget(self.delProblemButton)
 
         self.parametersLayout = QVBoxLayout()
         self.parametersFullLayout.addLayout(self.parametersLayout)
@@ -116,20 +132,39 @@ class Ui(QWidget):
             layout.addWidget(text)
             self.parametersLayout.addLayout(layout)
 
-    @staticmethod
-    def fun1(*args):
-        return 50 - args[0] ** 2 - args[1] ** 2
-
     def startAlgorithm(self):
-        # todo check correctness of data
+        # take all parameters and problem params
         params = []
         for index in range(self.parametersLayout.count()):
             child = self.parametersLayout.itemAt(index)
             for x in range(child.count()):
                 grandchild = child.itemAt(x).widget()
                 if isinstance(grandchild, QPlainTextEdit):
-                    params.append(float(grandchild.toPlainText()))
+                    try:
+                        params.append(float(grandchild.toPlainText()))
+                    except Exception:
+                        print("Popraw dane.")
+                        return
         print(params)
+
+        problem_name = self.problemList.currentItem().data(0)
+        for p in self.problems:
+            if str(p) == problem_name:
+                self.problem = p
+        # clear layouts
+        # self.clearLayout(self.algorithmSplitLayout)
+        # self.algorithmSplitLayout.layout().deleteLater()
+        # self.clearLayout(self.algorithmLayout)
+        # self.algorithmLayout.layout().deleteLater()
+        # self.clearLayout(self.mainLayout)
         # todo choose ideal algorithm
-        algorithm = alg.BeesAlgorithm(self.fun1, 2, [(-5.00, 5.00)])
+        algorithm = alg.BeesAlgorithm(self.problem)
         algorithm.start_algorithm()
+
+    def makeProblemsList(self):
+        self.problems = []
+        with open("src/problems.json", "r") as f:
+            data = json.load(f)
+            for function in data["functions"]:
+                self.problemList.addItem(function["title"])
+                self.problems.append(Problem(function))

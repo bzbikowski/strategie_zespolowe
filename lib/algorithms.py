@@ -18,17 +18,13 @@ class BeesAlgorithm(object):
     until kryterium końca BA niespełnione
     end
     """
-    def __init__(self, fun, no_of_param, param_range):
+
+    def __init__(self, fun):
         self.scouts = []
-        self.function = fun
+        self.function = fun.calculate
         self.init_data = []
         self.best_value_vector = []
-        if len(param_range) == no_of_param:
-            self.init_data = param_range
-        elif not len(param_range) == no_of_param and len(param_range) == 1:
-            self.init_data = [param_range[0] for _ in range(no_of_param)]
-        else:
-            raise Exception("Błąd")
+        self.init_data = fun.param_range
         # self.number_of_scouts = 10  # liczba pszczół zwiadowców (n)
         # self.number_of_chosen_places = 3  # Liczba miejsc wybranych n z odwiedzonych(m)
         # self.number_of_best_places = 1  # Liczba najlepszych obszarów dla m odwiedzanych miejsc (e)
