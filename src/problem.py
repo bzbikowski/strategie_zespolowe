@@ -80,6 +80,7 @@ class Problem(object):
         return
 
     def change_symbols_rpn(self):
+        # todo make pi great again
         pairs = [(" ", ""), ("sin", "s"), ("cos", "c"), ("tg", "t"), ("ctg", "g"),
                  ("exp", "e"), ("max", "m"), ("min", "n"), ("pi", "p")]
         for pair in pairs:

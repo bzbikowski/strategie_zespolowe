@@ -6,7 +6,7 @@ from PySide2.QtWebEngineWidgets import QWebEngineView
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QPlainTextEdit
 
 import lib.algorithms as alg
-from problem import Problem
+from src.problem import Problem
 
 
 class Ui(QWidget):
@@ -151,13 +151,12 @@ class Ui(QWidget):
         for p in self.problems:
             if str(p) == problem_name:
                 self.problem = p
-        # clear layouts
+        # todo clear layouts
         # self.clearLayout(self.algorithmSplitLayout)
         # self.algorithmSplitLayout.layout().deleteLater()
         # self.clearLayout(self.algorithmLayout)
         # self.algorithmLayout.layout().deleteLater()
         # self.clearLayout(self.mainLayout)
-        # todo choose ideal algorithm
         algorithm = alg.BeesAlgorithm(self.problem)
         algorithm.start_algorithm()
 
