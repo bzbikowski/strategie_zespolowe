@@ -1,4 +1,6 @@
 import collections
+import math
+import operator
 
 
 class Problem(object):
@@ -13,7 +15,7 @@ class Problem(object):
         self.param_range = zip(self.low, self.high)
 
     def convert_to_rpn(self):
-        fun_s = ['s', 'c', 't', 'g', 'e', 'm', 'n']
+        fun_s = ['s', 'c', 't', 'e', 'm', 'n']
         opp_s = ['+', '-', '*', '/', '^', '%']
         temp = []
         var = False
@@ -81,14 +83,37 @@ class Problem(object):
 
     def change_symbols_rpn(self):
         # todo make pi great again
-        pairs = [(" ", ""), ("sin", "s"), ("cos", "c"), ("tg", "t"), ("ctg", "g"),
+        pairs = [(" ", ""), ("sin", "s"), ("cos", "c"), ("tg", "t"),
                  ("exp", "e"), ("max", "m"), ("min", "n"), ("pi", "p")]
         for pair in pairs:
             self.fun = self.fun.replace(pair[0], pair[1])
 
     def calculate(self, *params):
-        # todo calculate rpn
-        return 0
+        ops = {
+            "+": operator.add,
+            "-": operator.sub,
+            "*": operator.mul,
+            "/": operator.floordiv,
+            "^": operator.pow,
+            "%": operator.mod,
+            "s": math.sin,
+            "c": math.cos,
+            "t": math.tan,
+        }
+        stack = collections.deque()
+        for token in self.rpn_list:
+            if token.isnumeric():
+                stack.appendleft(token)
+            elif 'x' in token:
+                stack.appendleft(params[int(token[1:])])
+            elif token in ['s', 'c', 't', 'e']:
+                arg = float(stack.popleft())
+                stack.appendleft(ops[token](arg))
+            else:
+                arg2 = float(stack.popleft())
+                arg1 = float(stack.popleft())
+                stack.appendleft(ops[token](arg1, arg2))
+        return stack[0]
 
     def __str__(self):
         return self.title

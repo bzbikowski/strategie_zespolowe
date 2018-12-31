@@ -4,6 +4,7 @@ from lib.individual import BeeScout, BeeWorker
 
 
 class BeesAlgorithm(object):
+    # todo make step-control for algorithm 
     """
     begin
     Generuj losowo początkową populację rozwiązań
@@ -38,8 +39,15 @@ class BeesAlgorithm(object):
         self.best_result = 0
         self.best_value = 0
 
+        self.final_data = {"best_result": 0,
+                           "best_value": 0,
+                           "no_of_gens": 0,
+                           "best_value_vector": [],
+                           "scouts_per_gen": [], }
+
     def initiate_population(self, fun, init_data, number_of_scouts):
         self.scouts = [BeeScout(fun) for _ in range(number_of_scouts)]
+        init_data = list(init_data)
         for bee in self.scouts:
             bee.randomize_position(init_data)
 
@@ -55,10 +63,11 @@ class BeesAlgorithm(object):
             for scout in self.scouts:
                 scout.calculate_fitness()
             self.scouts.sort(reverse=True)
+            self.final_data["scouts_per_gen"].append([(s.f_value, s.param) for s in self.scouts])
             if self.scouts[0].f_value > self.best_value:
-                self.best_value = self.scouts[0].f_value
-                self.best_result = self.scouts[0].param
-                self.best_value_vector.append(self.best_value)
+                self.final_data["best_value"] = self.scouts[0].f_value
+                self.final_data["best_result"] = self.scouts[0].param
+                self.final_data["best_value_vector"].append(self.best_value)
             if 50 - self.best_value < stop_criteria:
                 break
             best_places_workers = []
@@ -89,7 +98,7 @@ class BeesAlgorithm(object):
                 self.scouts.append(scout)
             generation += 1
         self.draw_graph()
-        return self.best_result, self.best_value
+        return
 
     def draw_graph(self):
         # todo make drawnings

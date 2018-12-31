@@ -6,6 +6,7 @@ from PySide2.QtWebEngineWidgets import QWebEngineView
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QPlainTextEdit
 
 import lib.algorithms as alg
+from src.frame import Plot_widget
 from src.problem import Problem
 
 
@@ -80,7 +81,6 @@ class Ui(QWidget):
         self.parametersFullLayout = QHBoxLayout()
         self.mainHelpLayout.addLayout(self.parametersFullLayout)
 
-        # todo make layout for choosing problem
         self.problemLayout = QVBoxLayout()
         self.parametersFullLayout.addLayout(self.problemLayout)
 
@@ -91,6 +91,7 @@ class Ui(QWidget):
         self.problemOptionLayout = QHBoxLayout()
         self.problemLayout.addLayout(self.problemOptionLayout)
 
+        # todo make functional buttons for adding, editing problems
         self.addProblemButton = QPushButton("Dodaj")
         self.problemOptionLayout.addWidget(self.addProblemButton)
 
@@ -125,7 +126,7 @@ class Ui(QWidget):
             label = QLabel(element['name'])
             text = None
             if element['type'] == 'plain_text':
-                text = QPlainTextEdit()
+                text = QPlainTextEdit(element['default'])
             else:
                 pass
             layout.addWidget(label)
@@ -141,7 +142,7 @@ class Ui(QWidget):
                 grandchild = child.itemAt(x).widget()
                 if isinstance(grandchild, QPlainTextEdit):
                     try:
-                        params.append(float(grandchild.toPlainText()))
+                        params.append(int(grandchild.toPlainText()))
                     except Exception:
                         print("Popraw dane.")
                         return
@@ -151,14 +152,28 @@ class Ui(QWidget):
         for p in self.problems:
             if str(p) == problem_name:
                 self.problem = p
-        # todo clear layouts
-        # self.clearLayout(self.algorithmSplitLayout)
-        # self.algorithmSplitLayout.layout().deleteLater()
-        # self.clearLayout(self.algorithmLayout)
-        # self.algorithmLayout.layout().deleteLater()
-        # self.clearLayout(self.mainLayout)
-        algorithm = alg.BeesAlgorithm(self.problem)
-        algorithm.start_algorithm()
+        self.clearLayout(self.problemOptionLayout)
+        self.problemOptionLayout.layout().deleteLater()
+        self.clearLayout(self.problemLayout)
+        self.problemLayout.layout().deleteLater()
+        for i in range(self.parametersLayout.count()):
+            layout = self.parametersLayout.takeAt(0)
+            self.clearLayout(layout)
+            layout.layout().deleteLater()
+        self.clearLayout(self.parametersLayout)
+        self.parametersLayout.layout().deleteLater()
+        self.clearLayout(self.parametersFullLayout)
+        self.parametersFullLayout.layout().deleteLater()
+        self.clearLayout(self.mainHelpLayout)
+        self.mainHelpLayout.layout().deleteLater()
+        self.clearLayout(self.mainLayout)
+        # todo make layout for graphs and map
+        self.canvas = Plot_widget()
+        self.mainLayout.addWidget(self.canvas)
+        algorithm = None
+        if self.chosenAlgorithm == "Bees Algorithm":
+            algorithm = alg.BeesAlgorithm(self.problem)
+        algorithm.start_algorithm(params[0], params[1], params[2], params[3], params[4], params[5])
 
     def makeProblemsList(self):
         self.problems = []

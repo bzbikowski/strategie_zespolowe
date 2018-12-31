@@ -2,27 +2,33 @@
   "elements": [
     {
       "name": "Number of generations",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "500"
     },
     {
       "name": "Number of scouts",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "10"
     },
     {
       "name": "Number of chosen places from all visited",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "3"
     },
     {
       "name": "Number of best places from all chosen",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "1"
     },
     {
       "name": "Number of reqruits for best places",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "4"
     },
     {
       "name": "Number of reqruits for other places",
-      "type": "plain_text"
+      "type": "plain_text",
+      "default": "2"
     }
   ]
 }
