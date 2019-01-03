@@ -55,7 +55,7 @@ class BeesAlgorithm(object):
                         number_of_best_places=1,
                         number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
                         init_size_of_neighbourhood=0.5,
-                        bee_search_prob=0.2, stop_criteria=1e-4):
+                        bee_search_prob=0.5, stop_criteria=1e-2):
         self.initiate_population(self.function, self.init_data, number_of_scouts)
         generation = 0
         while generation < max_generation:
@@ -68,7 +68,8 @@ class BeesAlgorithm(object):
                 self.final_data["best_value"] = self.scouts[0].f_value
                 self.final_data["best_result"] = self.scouts[0].param
                 self.final_data["best_value_vector"].append(self.best_value)
-            if 50 - self.best_value < stop_criteria:
+            print(self.final_data["best_value"])
+            if 50 - self.final_data["best_value"] < stop_criteria:
                 break
             best_places_workers = []
             for i in range(number_of_best_places):

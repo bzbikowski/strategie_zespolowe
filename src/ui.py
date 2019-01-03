@@ -168,12 +168,14 @@ class Ui(QWidget):
         self.mainHelpLayout.layout().deleteLater()
         self.clearLayout(self.mainLayout)
         # todo make layout for graphs and map
-        self.canvas = Plot_widget()
+        self.canvas = Plot_widget(self)
         self.mainLayout.addWidget(self.canvas)
         algorithm = None
         if self.chosenAlgorithm == "Bees Algorithm":
             algorithm = alg.BeesAlgorithm(self.problem)
-        algorithm.start_algorithm(params[0], params[1], params[2], params[3], params[4], params[5])
+        algorithm.start_algorithm(*params)
+        self.alg_data = algorithm.final_data
+        self.setStage(0)
 
     def makeProblemsList(self):
         self.problems = []
@@ -182,3 +184,6 @@ class Ui(QWidget):
             for function in data["functions"]:
                 self.problemList.addItem(function["title"])
                 self.problems.append(Problem(function))
+
+    def setStage(self, stage):
+        self.canvas.plot_scouts(self.alg_data, self.problem, stage)
