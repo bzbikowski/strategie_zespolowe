@@ -1,5 +1,8 @@
 import random
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from lib.individual import BeeScout, BeeWorker
 
 
@@ -20,12 +23,14 @@ class BeesAlgorithm(object):
     end
     """
 
-    def __init__(self, fun):
+    def __init__(self, fun, canvas):
         self.scouts = []
+        # self.problem = fun
         self.function = fun.calculate
         self.init_data = []
         self.best_value_vector = []
         self.init_data = fun.param_range
+        self.canvas = canvas
         # self.number_of_scouts = 10  # liczba pszczół zwiadowców (n)
         # self.number_of_chosen_places = 3  # Liczba miejsc wybranych n z odwiedzonych(m)
         # self.number_of_best_places = 1  # Liczba najlepszych obszarów dla m odwiedzanych miejsc (e)
@@ -98,9 +103,39 @@ class BeesAlgorithm(object):
                 scout = bee.promote()
                 self.scouts.append(scout)
             generation += 1
-        self.draw_graph()
         return
 
-    def draw_graph(self):
-        # todo make drawnings
-        pass
+    def plot_stage(self, index):
+        """
+        :param index: index of stage, which needs to be rendered
+        :return: 0 - success
+                 1 - failure
+        """
+        # todo support for multiple parameters
+        self.plot_scouts(index)
+        return 0
+
+    def plot_base(self, ax):
+        N = 200
+        x = np.linspace(-10.0, 10.0, N)
+        y = np.linspace(-10.0, 10.0, N)
+
+        X, Y = np.meshgrid(x, y)
+
+        Z = np.zeros((N, N))
+        for i in range(len(Z)):
+            for j in range(len(Z[0])):
+                Z[i][j] = self.function(x[j], y[i])
+        cs = ax.contourf(X, Y, Z, cmap=plt.get_cmap('plasma'))
+        cbar = self.canvas.fig.colorbar(cs)
+
+    def plot_scouts(self, gen):
+        self.canvas.fig.clf()
+        ax = self.canvas.fig.add_subplot(111)
+
+        self.plot_base(ax)
+
+        for val, par in self.final_data['scouts_per_gen'][gen]:
+            ax.plot(par[0], par[1], 'bo')
+        ax.set_title('PyQt Matplotlib Example')
+        self.canvas.draw()
