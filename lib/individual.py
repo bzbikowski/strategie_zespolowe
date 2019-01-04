@@ -1,3 +1,4 @@
+import math
 import random
 
 
@@ -41,8 +42,13 @@ class BeeWorker(Bee):
         self.scout = scout
 
     def search_neighbourhood(self, neigh_area):
-        for p in self.scout.param:
-            self.param.append(p + random.random() * 2 * neigh_area - neigh_area)
+        s = random.random() * 2 * neigh_area - neigh_area
+        k = random.random() * 360
+        x1 = self.scout.param[0] + math.sin(k) * s
+        x2 = self.scout.param[1] + math.cos(k) * s
+        self.param = [x1, x2]
+        # for p in self.scout.param:
+        #     self.param.append(p + random.random() * 2 * neigh_area - neigh_area)
         self.calculate_fitness()
 
     def promote(self):

@@ -1,9 +1,10 @@
 import json
 import os
 
-from PySide2.QtCore import QUrl
+from PySide2.QtCore import QUrl, QLocale
+from PySide2.QtGui import QIntValidator, QDoubleValidator
 from PySide2.QtWebEngineWidgets import QWebEngineView
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QPlainTextEdit
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QLineEdit
 
 import lib.algorithms as alg
 from src.frame import PlotWidget
@@ -79,6 +80,7 @@ class Ui(QWidget):
 
     def goToNextLayout(self):
         """Clear elements from first layout and make second layout for choosing parameters and problem"""
+        # todo display warning if any algorithm is not selected
         self.chosenAlgorithm = self.algorithmList.currentItem().data(0)
 
         self.clearLayout(self.algorithmSplitLayout)
@@ -139,8 +141,16 @@ class Ui(QWidget):
             layout = QHBoxLayout()
             label = QLabel(element['name'])
             text = None
-            if element['type'] == 'plain_text':
-                text = QPlainTextEdit(element['default'])
+            if element['type'] == 'int':
+                text = QLineEdit(element['default'])
+                text.setValidator(QIntValidator())
+            elif element['type'] == 'float':
+                text = QLineEdit(element['default'])
+                lo = QLocale(QLocale.c())
+                lo.setNumberOptions(QLocale.RejectGroupSeparator)
+                val = QDoubleValidator()
+                val.setLocale(lo)
+                text.setValidator(val)
             else:
                 pass
             layout.addWidget(label)
@@ -155,14 +165,16 @@ class Ui(QWidget):
             child = self.parametersLayout.itemAt(index)
             for x in range(child.count()):
                 grandchild = child.itemAt(x).widget()
-                if isinstance(grandchild, QPlainTextEdit):
-                    try:
-                        params.append(int(grandchild.toPlainText()))
-                    except Exception:
-                        print("Popraw dane.")
+                if isinstance(grandchild, QLineEdit):
+                    if grandchild.text() == "":
+                        # todo print warning
                         return
-        print(params)
+                    if isinstance(grandchild.validator(), QDoubleValidator):
+                        params.append(float(grandchild.text()))
+                    else:
+                        params.append(int(grandchild.text()))
 
+        # todo display warning if any problem is not selected
         problem_name = self.problemList.currentItem().data(0)
         for p in self.problems:
             if str(p) == problem_name:
@@ -182,18 +194,22 @@ class Ui(QWidget):
         self.clearLayout(self.mainHelpLayout)
         self.mainHelpLayout.layout().deleteLater()
         self.clearLayout(self.mainLayout)
-        # todo make layout for graphs and map ( button for next step, previous ...)
+        # todo make widget to display informations
         self.canvas = PlotWidget(self)
         self.mainLayout.addWidget(self.canvas)
-        self.counter = 0
-        self.testButton = QPushButton("test")
-        self.testButton.released.connect(self.moveStageUp)
-        self.mainLayout.addWidget(self.testButton)
+        self.canvasButtonLayout = QVBoxLayout()
+        self.mainLayout.addLayout(self.canvasButtonLayout)
+        self.nextButton = QPushButton("Next")
+        self.nextButton.released.connect(self.moveStageUp)
+        self.canvasButtonLayout.addWidget(self.nextButton)
+        self.prevButton = QPushButton("Prev")
+        self.prevButton.released.connect(self.moveStageDown)
+        self.canvasButtonLayout.addWidget(self.prevButton)
         # todo make algorithm running in separate thread
         if self.chosenAlgorithm == "Bees Algorithm":
             self.algorithm = alg.BeesAlgorithm(self.problem, self.canvas)
         self.algorithm.start_algorithm(*params)
-        self.algorithm.plot_stage(0)
+        self.algorithm.plot_stage()
 
     def makeProblemsList(self):
         """Read data from json file with information about problems, then fill list widget with data"""
@@ -205,11 +221,12 @@ class Ui(QWidget):
                 self.problems.append(Problem(function))
 
     def moveStageUp(self):
-        self.counter += 1
-        if not self.algorithm.plot_stage(self.counter):
-            pass
+        if self.algorithm.plot_stage(True) == 1:
+            self.end_screen()
 
     def moveStageDown(self):
-        self.counter -= 1
-        if not self.algorithm.plot_stage(self.counter):
-            pass
+        self.algorithm.plot_stage(False)
+
+    def end_screen(self):
+        # todo make end screen
+        print("KAPPA")
