@@ -2,35 +2,63 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+from PySide2.QtCore import QThread
 
 from lib.individual import BeeScout, BeeWorker
 
 
-class BeesAlgorithm(object):
-    """
-    begin
-    Generuj losowo początkową populację rozwiązań
-    Oceń jakość rozwiązań
-    repreat
-    Wybierz miejsca do przeszukiwania sąsiedztwa
-    Wybierz rekrutów dla wybranych miejsc (większa liczba
-    pszczół dla najlepszych
-    e miejsc) i oceń ich
-    Wybierz najlepszą pszczołę z każdego obszaru
-    Przypisz pozostałym pszczołom przemieszczenia losowe i ocen je
-    until kryterium końca BA niespełnione
-    end
-    """
+class BaseAlg(QThread):
+    def __init__(self):
+        super(BaseAlg, self).__init__()
 
-    def __init__(self, fun, canvas):
+    def setup_algorithm(self, max_generation=500, number_of_scouts=10, number_of_chosen_places=3,
+                        number_of_best_places=1,
+                        number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
+                        init_size_of_neighbourhood=0.5,
+                        bee_search_prob=0.5, stop_criteria=1e-2):
+        """
+
+        :param max_generation:
+        :param number_of_scouts:
+        :param number_of_chosen_places:
+        :param number_of_best_places:
+        :param number_of_recruits_for_best:
+        :param number_of_recruits_for_other:
+        :param init_size_of_area:
+        :param init_size_of_neighbourhood:
+        :param bee_search_prob:
+        :param stop_criteria:
+        :return:
+        """
+        pass
+
+    def plot_stage(self, dir=None):
+        """
+
+        :param dir:
+        :return:
+        """
+        pass
+
+    def run(self):
+        """
+
+        :return:
+        """
+        pass
+
+
+class BeesAlgorithm(BaseAlg):
+    def __init__(self, fun, canvas, panel):
+        super(BeesAlgorithm, self).__init__()
         self.index = 0
         self.stage = 0
         self.scouts = []
-        # self.problem = fun
         self.function = fun.calculate
         self.best_value_vector = []
         self.init_data = list(fun.param_range)
         self.canvas = canvas
+        self.panel = panel
         # self.number_of_scouts = 10  # liczba pszczół zwiadowców (n)
         # self.number_of_chosen_places = 3  # Liczba miejsc wybranych n z odwiedzonych(m)
         # self.number_of_best_places = 1  # Liczba najlepszych obszarów dla m odwiedzanych miejsc (e)
@@ -57,17 +85,28 @@ class BeesAlgorithm(object):
         for bee in self.scouts:
             bee.randomize_position(init_data)
 
-    def start_algorithm(self, max_generation=500, number_of_scouts=10, number_of_chosen_places=3,
+    def setup_algorithm(self, max_generation=500, number_of_scouts=10, number_of_chosen_places=3,
                         number_of_best_places=1,
                         number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
                         init_size_of_neighbourhood=0.5,
-                        bee_search_prob=0.5, stop_criteria=1e-2):
+                        bee_search_prob=0.5, stop_criteria=1e-3):
+        self.max_generation = max_generation
+        self.number_of_scouts = number_of_scouts
+        self.number_of_chosen_places = number_of_chosen_places
+        self.number_of_best_places = number_of_best_places
+        self.number_of_recruits_for_best = number_of_recruits_for_best
+        self.number_of_recruits_for_other = number_of_recruits_for_other
+        self.area_size = init_size_of_area
+        self.bee_search_prob = bee_search_prob
+        self.stop_criteria = stop_criteria
         self.neigh_size = init_size_of_neighbourhood
         self.chosen_places = number_of_chosen_places
         self.best_places = number_of_best_places
         self.initiate_population(self.function, self.init_data, number_of_scouts)
+
+    def run(self):
         generation = 0
-        while generation < max_generation:
+        while generation < self.max_generation:
             for scout in self.scouts:
                 scout.calculate_fitness()
             self.scouts.sort(reverse=True)
@@ -76,26 +115,26 @@ class BeesAlgorithm(object):
                 self.final_data["best_value"] = self.scouts[0].f_value
                 self.final_data["best_result"] = self.scouts[0].param
                 self.final_data["best_value_vector"].append(self.best_value)
-            if 50 - self.final_data["best_value"] < stop_criteria:
+            if 50 - self.final_data["best_value"] < self.stop_criteria:
                 break
             data_workers = []
             best_places_workers = []
-            for i in range(number_of_best_places):
+            for i in range(self.number_of_best_places):
                 local_workers = []
-                for j in range(number_of_recruits_for_best):
+                for j in range(self.number_of_recruits_for_best):
                     worker = BeeWorker(self.scouts[0])
-                    worker.search_neighbourhood(init_size_of_neighbourhood)
+                    worker.search_neighbourhood(self.neigh_size)
                     local_workers.append(worker)
                 local_workers.sort(reverse=True)
                 data_workers.append(local_workers)
                 self.scouts.pop(0)
                 best_places_workers.append(local_workers[0])
 
-            for i in range(number_of_best_places, number_of_chosen_places):
+            for i in range(self.number_of_best_places, self.number_of_chosen_places):
                 local_workers = []
-                for j in range(number_of_recruits_for_other):
+                for j in range(self.number_of_recruits_for_other):
                     worker = BeeWorker(self.scouts[0])
-                    worker.search_neighbourhood(init_size_of_neighbourhood)
+                    worker.search_neighbourhood(self.neigh_size)
                     local_workers.append(worker)
                 local_workers.sort(reverse=True)
                 data_workers.append(local_workers)
@@ -103,13 +142,12 @@ class BeesAlgorithm(object):
                 best_places_workers.append(local_workers[0])
             self.final_data["workers_per_gen"].append(data_workers)
             for bee in self.scouts:
-                if random.random() < bee_search_prob:
-                    bee.search_local(init_size_of_area)
+                if random.random() < self.bee_search_prob:
+                    bee.search_local(self.area_size)
             for bee in best_places_workers:
                 scout = bee.promote()
                 self.scouts.append(scout)
             generation += 1
-        return
 
     def plot_stage(self, dir=None):
         """
@@ -158,6 +196,7 @@ class BeesAlgorithm(object):
     def plot_scouts(self, ax, gen):
         for val, par in self.final_data['scouts_per_gen'][gen]:
             ax.plot(par[0], par[1], 'bo')
+        self.panel.setText("Kappa")
 
     def plot_areas_with_best(self, ax, gen):
         index = 0

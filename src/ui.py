@@ -1,13 +1,16 @@
 import json
 import os
 
-from PySide2.QtCore import QUrl, QLocale
+from PySide2.QtCore import QUrl, QLocale, Qt
 from PySide2.QtGui import QIntValidator, QDoubleValidator
 from PySide2.QtWebEngineWidgets import QWebEngineView
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QLineEdit
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QPushButton, QLineEdit, QTextEdit, \
+    QMessageBox
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 import lib.algorithms as alg
 from src.frame import PlotWidget
+from src.popup import ProblemDialog
 from src.problem import Problem
 
 
@@ -64,24 +67,28 @@ class Ui(QWidget):
         self.mainLayout.addWidget(self.webPageView)
 
     def makeAlgorithmList(self):
-        # todo make algorithm appear if schema and algorithm (maybe help) is ok
+        # todo verify schema file
         for file in os.listdir("./src/schema"):
             self.algorithmList.addItem(file[:-5])
 
     def chooseAlgorithm(self, index):
-        # print(index.row(), index.data())
         file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/{index.data()}.html"))
-        local_url = QUrl.fromLocalFile(file_path)
-        # todo check if file exists, if not display default and display info
-        if not local_url.isEmpty():
+        if os.path.exists(file_path):
+            local_url = QUrl.fromLocalFile(file_path)
             self.webPageView.load(local_url)
         else:
-            pass
+            file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/none.html"))
+            local_url = QUrl.fromLocalFile(file_path)
+            self.webPageView.load(local_url)
 
     def goToNextLayout(self):
         """Clear elements from first layout and make second layout for choosing parameters and problem"""
-        # todo display warning if any algorithm is not selected
-        self.chosenAlgorithm = self.algorithmList.currentItem().data(0)
+        try:
+            self.chosenAlgorithm = self.algorithmList.currentItem().data(0)
+        except AttributeError as e:
+            # algorithm is not selected
+            QMessageBox.warning(self, "Algorithm not chosen", "Please, choose an algorithm before going further.")
+            return
 
         self.clearLayout(self.algorithmSplitLayout)
         self.algorithmSplitLayout.layout().deleteLater()
@@ -105,14 +112,16 @@ class Ui(QWidget):
         self.problemOptionLayout = QHBoxLayout()
         self.problemLayout.addLayout(self.problemOptionLayout)
 
-        # todo make functional buttons for adding, editing problems
         self.addProblemButton = QPushButton("Dodaj")
+        self.addProblemButton.released.connect(self.openAddMenu)
         self.problemOptionLayout.addWidget(self.addProblemButton)
 
         self.editProblemButton = QPushButton("Edytuj")
+        self.editProblemButton.released.connect(self.openEditMenu)
         self.problemOptionLayout.addWidget(self.editProblemButton)
 
         self.delProblemButton = QPushButton("Usun")
+        self.delProblemButton.released.connect(self.openDelMenu)
         self.problemOptionLayout.addWidget(self.delProblemButton)
 
         self.parametersLayout = QVBoxLayout()
@@ -167,18 +176,42 @@ class Ui(QWidget):
                 grandchild = child.itemAt(x).widget()
                 if isinstance(grandchild, QLineEdit):
                     if grandchild.text() == "":
-                        # todo print warning
+                        QMessageBox.warning(self, "Empty field",
+                                            "Empty fields must be filled with correct values.")
                         return
                     if isinstance(grandchild.validator(), QDoubleValidator):
                         params.append(float(grandchild.text()))
                     else:
                         params.append(int(grandchild.text()))
+        try:
+            problem_name = self.problemList.currentItem().data(0)
+        except AttributeError as e:
+            # problem is not selected
+            QMessageBox.warning(self, "Problem not chosen",
+                                "Please, choose an problem for the algorithm to solve before going further.")
+            return
 
-        # todo display warning if any problem is not selected
-        problem_name = self.problemList.currentItem().data(0)
         for p in self.problems:
             if str(p) == problem_name:
                 self.problem = p
+        self.canvas = PlotWidget(self)
+        self.canvasToolBar = NavigationToolbar(self.canvas, self)
+        self.canvasInfoPanel = QTextEdit()
+        self.info = QLabel("Running...")
+        self.mainHelpLayout.addWidget(self.info, alignment=Qt.AlignCenter)
+        if self.chosenAlgorithm == "Bees Algorithm":
+            self.algorithm = alg.BeesAlgorithm(self.problem, self.canvas, self.canvasInfoPanel)
+        self.algorithm.setup_algorithm(*params)
+        self.algorithm.started.connect(self.block_layout)
+        self.algorithm.finished.connect(self.alg_finish)
+        self.algorithm.start()
+
+    def block_layout(self):
+        self.setEnabled(False)
+
+    def alg_finish(self):
+        # todo change size of canvas and window
+        self.setEnabled(True)
         self.clearLayout(self.problemOptionLayout)
         self.problemOptionLayout.layout().deleteLater()
         self.clearLayout(self.problemLayout)
@@ -194,9 +227,10 @@ class Ui(QWidget):
         self.clearLayout(self.mainHelpLayout)
         self.mainHelpLayout.layout().deleteLater()
         self.clearLayout(self.mainLayout)
-        # todo make widget to display informations
-        self.canvas = PlotWidget(self)
-        self.mainLayout.addWidget(self.canvas)
+        self.canvasToolLayout = QVBoxLayout()
+        self.canvasToolLayout.addWidget(self.canvas)
+        self.canvasToolLayout.addWidget(self.canvasToolBar)
+        self.mainLayout.addLayout(self.canvasToolLayout)
         self.canvasButtonLayout = QVBoxLayout()
         self.mainLayout.addLayout(self.canvasButtonLayout)
         self.nextButton = QPushButton("Next")
@@ -205,10 +239,7 @@ class Ui(QWidget):
         self.prevButton = QPushButton("Prev")
         self.prevButton.released.connect(self.moveStageDown)
         self.canvasButtonLayout.addWidget(self.prevButton)
-        # todo make algorithm running in separate thread
-        if self.chosenAlgorithm == "Bees Algorithm":
-            self.algorithm = alg.BeesAlgorithm(self.problem, self.canvas)
-        self.algorithm.start_algorithm(*params)
+        self.mainLayout.addWidget(self.canvasInfoPanel)
         self.algorithm.plot_stage()
 
     def makeProblemsList(self):
@@ -228,5 +259,26 @@ class Ui(QWidget):
         self.algorithm.plot_stage(False)
 
     def end_screen(self):
-        # todo make end screen
+        # todo make end screen ?
         print("KAPPA")
+
+    def openAddMenu(self):
+        self.popup = ProblemDialog()
+        self.popup.show()
+        # todo widget for adding and editing problems
+
+    def openEditMenu(self):
+        try:
+            problem = self.problemList.currentItem()
+        except AttributeError as e:
+            # problem is not selected
+            return
+        self.popup = ProblemDialog(problem)
+        self.popup.show()
+
+    def openDelMenu(self):
+        result = QMessageBox.information(self, "Delete element", "Are you sure you want to delete this element?",
+                                         QMessageBox.Ok, QMessageBox.Cancel)
+        if result == QMessageBox.Ok:
+            # todo delete data from json file
+            self.problemList.takeItem(self.problemList.currentRow())

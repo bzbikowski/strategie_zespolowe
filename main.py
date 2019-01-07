@@ -7,6 +7,6 @@ from src.window import Window
 if __name__ == "__main__":
     qApp = QApplication(sys.argv)
     app = Window()
-    app.resize(1024, 768)
+    app.setFixedSize(1024, 768)
     app.show()
     sys.exit(qApp.exec_())
