@@ -1,13 +1,6 @@
 {
   "functions": [
     {
-      "title": "Kappa",
-      "fun": "sin(50.0) - (25^2)/max(4, 3) + 5 %   2",
-      "x_param": 0,
-      "x_min": [],
-      "x_max": []
-    },
-    {
       "title": "Przyklad",
       "fun": "50 - x[0]^2 - x[1]^2",
       "x_param": 2,

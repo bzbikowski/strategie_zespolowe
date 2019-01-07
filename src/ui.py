@@ -35,6 +35,7 @@ class Ui(QWidget):
         self.problems = None
         self.problem = None
         self.algorithm = None
+        self.popup = None
 
         self.setupUI()
 
@@ -67,8 +68,31 @@ class Ui(QWidget):
         self.mainLayout.addWidget(self.webPageView)
 
     def makeAlgorithmList(self):
-        # todo verify schema file
         for file in os.listdir("./src/schema"):
+            error = False
+            with open(f"./src/schema/{file}") as f:
+                data = json.load(f)
+                for elem in data["elements"]:
+                    if "name" not in elem or "type" not in elem or "default" not in elem:
+                        error = True
+                        break
+                    if elem["type"] not in ["int", "float"]:
+                        error = True
+                        break
+                    if elem["type"] == "int":
+                        try:
+                            int(elem["default"])
+                        except ValueError as e:
+                            error = True
+                            break
+                    elif elem["type"] == "float":
+                        try:
+                            float(elem["default"])
+                        except ValueError as e:
+                            error = True
+                            break
+            if error:
+                continue
             self.algorithmList.addItem(file[:-5])
 
     def chooseAlgorithm(self, index):
@@ -145,7 +169,6 @@ class Ui(QWidget):
         data = None
         with open(f"src/schema/{self.chosenAlgorithm}.json", "r") as f:
             data = json.load(f)
-            print(data['elements'][0])
         for element in data['elements']:
             layout = QHBoxLayout()
             label = QLabel(element['name'])
@@ -263,22 +286,44 @@ class Ui(QWidget):
         print("KAPPA")
 
     def openAddMenu(self):
-        self.popup = ProblemDialog()
+        if self.popup is not None and self.popup.isVisible():
+            return
+        self.popup = ProblemDialog(self)
         self.popup.show()
-        # todo widget for adding and editing problems
 
     def openEditMenu(self):
+        if self.popup is not None and self.popup.isVisible():
+            return
+        problem = None
         try:
-            problem = self.problemList.currentItem()
+            problem_name = self.problemList.currentItem().data(0)
         except AttributeError as e:
             # problem is not selected
             return
-        self.popup = ProblemDialog(problem)
+        for p in self.problems:
+            if str(p) == problem_name:
+                problem = p
+        self.popup = ProblemDialog(self, problem)
         self.popup.show()
 
     def openDelMenu(self):
         result = QMessageBox.information(self, "Delete element", "Are you sure you want to delete this element?",
                                          QMessageBox.Ok, QMessageBox.Cancel)
         if result == QMessageBox.Ok:
-            # todo delete data from json file
-            self.problemList.takeItem(self.problemList.currentRow())
+            item = self.problemList.takeItem(self.problemList.currentRow())
+            with open("./src/problems.json", 'r') as f:
+                data = json.load(f)
+                for fun in self.problems:
+                    if fun.title == item.data(0):
+                        i = self.problems.index(fun)
+                        self.problems.pop(i)
+                        data["functions"].pop(i)
+                        break
+
+            with open("./src/problems.json", 'w') as f:
+                json.dump(data, f, indent=4)
+
+    def reload_problem_list(self):
+        self.problemList.clear()
+        self.problems = []
+        self.makeProblemsList()
