@@ -104,7 +104,6 @@ class ProblemDialog(QWidget):
         return blank
 
     def save(self):
-        # todo validate data (title must not contain some chars etc...)
         # check if all fields are not empty
         if self.check_if_empty():
             QMessageBox.warning(self, "Empty fields", "Empty fields must be filled with correct values.",

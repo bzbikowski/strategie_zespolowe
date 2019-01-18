@@ -7,3 +7,8 @@ symulator powinien przestawiać w postaci odpowiednich wizualizacji poszczególn
 kroki algorytmu
 
 Algorytmy:  ACO, BA, FA, GSO. IWD, CSS, GSA, RFD, SDS
+
+
+#### Project under development.
+
+...

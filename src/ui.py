@@ -220,6 +220,7 @@ class Ui(QWidget):
         self.canvas = PlotWidget(self)
         self.canvasToolBar = NavigationToolbar(self.canvas, self)
         self.canvasInfoPanel = QTextEdit()
+        # todo disable writing, custom font
         self.info = QLabel("Running...")
         self.mainHelpLayout.addWidget(self.info, alignment=Qt.AlignCenter)
         if self.chosenAlgorithm == "Bees Algorithm":
@@ -264,6 +265,7 @@ class Ui(QWidget):
         self.canvasButtonLayout.addWidget(self.prevButton)
         self.mainLayout.addWidget(self.canvasInfoPanel)
         self.algorithm.plot_stage()
+        self.parent().setFixedSize(1224, 768)
 
     def makeProblemsList(self):
         """Read data from json file with information about problems, then fill list widget with data"""

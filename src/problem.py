@@ -39,6 +39,8 @@ class Problem(object):
                 if ch == ',':
                     self.rpn_list.append("".join(temp))
                     temp = []
+                if ch == 'p':
+                    self.rpn_list.append(math.pi)
                 if ch in fun_s:
                     if not len(temp) == 0:
                         self.rpn_list.append("".join(temp))
@@ -82,7 +84,6 @@ class Problem(object):
         return
 
     def change_symbols_rpn(self):
-        # todo make pi great again
         pairs = [(" ", ""), ("sin", "s"), ("cos", "c"), ("tg", "t"),
                  ("exp", "e"), ("max", "m"), ("min", "n"), ("pi", "p")]
         for pair in pairs:

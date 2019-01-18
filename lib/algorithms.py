@@ -11,45 +11,34 @@ class BaseAlg(QThread):
     def __init__(self):
         super(BaseAlg, self).__init__()
 
-    def setup_algorithm(self, max_generation=500, number_of_scouts=10, number_of_chosen_places=3,
-                        number_of_best_places=1,
-                        number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
-                        init_size_of_neighbourhood=0.5,
-                        bee_search_prob=0.5, stop_criteria=1e-2):
+    def setup_algorithm(self, *args, **kwargs):
         """
-
-        :param max_generation:
-        :param number_of_scouts:
-        :param number_of_chosen_places:
-        :param number_of_best_places:
-        :param number_of_recruits_for_best:
-        :param number_of_recruits_for_other:
-        :param init_size_of_area:
-        :param init_size_of_neighbourhood:
-        :param bee_search_prob:
-        :param stop_criteria:
-        :return:
+        Sequence of parameters must match the order from schema.
+        Must be reimplemented in parent class.
         """
         pass
 
-    def plot_stage(self, dir=None):
+    def plot_stage(self, direction=None):
         """
-
-        :param dir:
-        :return:
+        Here, render learning example based on current stage.
+        Checks for reaching boundaries must be written manually.
+        Must be reimplemented in parent class.
+        :param direction: If True/False, move current stage up/down. If None, initialize stage as zero index.
+        :type direction: bool
         """
         pass
 
     def run(self):
         """
-
-        :return:
+        Here, write all algorithm logic.
+        Must be reimplemented in parent class.
         """
         pass
 
 
 class BeesAlgorithm(BaseAlg):
     def __init__(self, fun, canvas, panel):
+        # todo doc init function too
         super(BeesAlgorithm, self).__init__()
         self.index = 0
         self.stage = 0
@@ -59,18 +48,22 @@ class BeesAlgorithm(BaseAlg):
         self.init_data = list(fun.param_range)
         self.canvas = canvas
         self.panel = panel
-        # self.number_of_scouts = 10  # liczba pszczół zwiadowców (n)
-        # self.number_of_chosen_places = 3  # Liczba miejsc wybranych n z odwiedzonych(m)
-        # self.number_of_best_places = 1  # Liczba najlepszych obszarów dla m odwiedzanych miejsc (e)
-        # self.number_of_recruits_for_best = 4  # Liczba rekrutów dla najlepszych e obszarów (nep)
-        # self.number_of_recruits_for_other = 2  # Liczba rekrutów dla innych (m-e) wybranych obszarów (nsp)
-        # self.init_size_of_area = 0.2  # początkowy rozmiar obszarów (ngh)
-        # self.init_size_of_neighbourhood = 0.5
-        # self.bee_search_prob = 0.2
-        # self.stop_criteria = 1e-4
 
         self.best_result = 0
         self.best_value = 0
+
+        self.max_generation = None
+        self.number_of_scouts = None
+        self.number_of_chosen_places = None
+        self.number_of_best_places = None
+        self.number_of_recruits_for_best = None
+        self.number_of_recruits_for_other = None
+        self.area_size = None
+        self.bee_search_prob = None
+        self.stop_criteria = None
+        self.neigh_size = None
+        self.chosen_places = None
+        self.best_places = None
 
         self.final_data = {"best_result": 0,
                            "best_value": 0,
@@ -149,13 +142,11 @@ class BeesAlgorithm(BaseAlg):
                 self.scouts.append(scout)
             generation += 1
 
-    def plot_stage(self, dir=None):
-        """
-        for now, just 2 parameters
-        """
-        if dir is None:
+    def plot_stage(self, direction=None):
+        # todo work on scale
+        if direction is None:
             self.index = 0
-        elif dir:
+        elif direction:
             if self.index == len(self.final_data['scouts_per_gen']) - 1:
                 return 1
             self.index += 1
@@ -196,7 +187,10 @@ class BeesAlgorithm(BaseAlg):
     def plot_scouts(self, ax, gen):
         for val, par in self.final_data['scouts_per_gen'][gen]:
             ax.plot(par[0], par[1], 'bo')
-        self.panel.setText("Kappa")
+            # todo procentowo (2%) przesun lekko w prawo
+            ax.text(par[0], par[1], f"{val:.2f}")
+        self.panel.setText(f"At first step, create {self.number_of_scouts} bees scouts and randomize their position."
+                           f" The current value of each bee is displayed above their position. If you want to check ..")
 
     def plot_areas_with_best(self, ax, gen):
         index = 0
@@ -209,8 +203,10 @@ class BeesAlgorithm(BaseAlg):
                 break
             c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
             ax.add_artist(c1)
-            ax.plot(par[0], par[1], 'bo')
+            ax.plot(par[0], par[1], f'{color}o')
+            ax.text(par[0], par[1], f"{val:.2f}")
             index += 1
+        self.panel.setText(f"...")
 
     def plot_workers(self, ax, gen):
         index = 0
