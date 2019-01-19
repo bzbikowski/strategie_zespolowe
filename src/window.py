@@ -6,6 +6,7 @@ from src.ui import Ui
 class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
+        self.setWindowTitle("Swarm algorithms - project")
         self.create_menu()
         self.gui = Ui(self)
         self.setCentralWidget(self.gui)

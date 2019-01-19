@@ -33,20 +33,26 @@ class ProblemDialog(QWidget):
         self.funField.textChanged.connect(self.check_unsaved)
         self.mainLayout.addWidget(self.funField, 1, 1)
 
+        self.targetLabel = QLabel("Target")
+        self.mainLayout.addWidget(self.targetLabel, 2, 0)
+        self.targetField = QLineEdit()
+        self.targetField.textChanged.connect(self.check_unsaved)
+        self.mainLayout.addWidget(self.targetField, 2, 1)
+
         self.paramLabel = QLabel("Number of parameters")
-        self.mainLayout.addWidget(self.paramLabel, 2, 0)
+        self.mainLayout.addWidget(self.paramLabel, 3, 0)
         self.paramField = QLineEdit()
         self.paramField.setValidator(QIntValidator())
         self.paramField.textChanged.connect(lambda: self.field_control(self.paramField.text()))
         self.paramField.textChanged.connect(self.check_unsaved)
-        self.mainLayout.addWidget(self.paramField, 2, 1)
+        self.mainLayout.addWidget(self.paramField, 3, 1)
 
         self.saveButton = QPushButton("Save", self)
         self.saveButton.released.connect(self.save)
-        self.mainLayout.addWidget(self.saveButton, 3, 0)
+        self.mainLayout.addWidget(self.saveButton, 4, 0)
         self.cancelButton = QPushButton("Cancel", self)
         self.cancelButton.released.connect(self.close)
-        self.mainLayout.addWidget(self.cancelButton, 3, 1)
+        self.mainLayout.addWidget(self.cancelButton, 4, 1)
 
     def field_control(self, number):
         if number == "":
@@ -73,6 +79,7 @@ class ProblemDialog(QWidget):
         self.previousTitle = problem.title
         self.titleField.setText(problem.title)
         self.funField.setText(problem.fun)
+        self.targetField.setText(str(problem.target))
         self.paramField.setText(str(problem.number_of_params))
         self.field_control(int(problem.number_of_params))
         for i in range(self.lastSize):
@@ -131,6 +138,7 @@ class ProblemDialog(QWidget):
             data["functions"][index] = {
                 "title": self.titleField.text(),
                 "fun": self.funField.text(),
+                "target": self.targetField.text(),
                 "x_param": int(self.paramField.text()),
                 "x_min": min_v,
                 "x_max": max_v}
@@ -143,6 +151,7 @@ class ProblemDialog(QWidget):
                     return
             form = {"title": self.titleField.text(),
                     "fun": self.funField.text(),
+                    "target": self.targetField.text(),
                     "x_param": int(self.paramField.text()),
                     "x_min": min_v,
                     "x_max": max_v}

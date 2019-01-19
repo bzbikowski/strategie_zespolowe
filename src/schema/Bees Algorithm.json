@@ -33,12 +33,22 @@
     {
       "name": "Size of the area for ...",
       "type": "float",
-      "default": "0.2"
+      "default": "0.5"
     },
     {
       "name": "Size of the area for neighbourhood search",
       "type": "float",
       "default": "0.5"
+    },
+    {
+      "name": "Probabilty ...",
+      "type": "float",
+      "default": "0.5"
+    },
+    {
+      "name": "Stop criteria",
+      "type": "float",
+      "default": "1e-2"
     }
   ]
 }

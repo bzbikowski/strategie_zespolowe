@@ -44,7 +44,7 @@ class Ui(QWidget):
         self.mainLayout = QHBoxLayout(self)
         self.algorithmLayout = QVBoxLayout()
 
-        self.algorithmTitle = QLabel("Wybierz algorytm")
+        self.algorithmTitle = QLabel("Choose an algorithm")
         self.algorithmLayout.addWidget(self.algorithmTitle)
 
         self.algorithmSplitLayout = QHBoxLayout()
@@ -55,7 +55,7 @@ class Ui(QWidget):
         self.algorithmSplitLayout.addWidget(self.algorithmList)
         self.makeAlgorithmList()
 
-        self.algorithmNext = QPushButton("Dalej", self)
+        self.algorithmNext = QPushButton("Next", self)
         self.algorithmNext.released.connect(self.goToNextLayout)
         self.algorithmSplitLayout.addWidget(self.algorithmNext)
 
@@ -136,15 +136,15 @@ class Ui(QWidget):
         self.problemOptionLayout = QHBoxLayout()
         self.problemLayout.addLayout(self.problemOptionLayout)
 
-        self.addProblemButton = QPushButton("Dodaj")
+        self.addProblemButton = QPushButton("Add")
         self.addProblemButton.released.connect(self.openAddMenu)
         self.problemOptionLayout.addWidget(self.addProblemButton)
 
-        self.editProblemButton = QPushButton("Edytuj")
+        self.editProblemButton = QPushButton("Edit")
         self.editProblemButton.released.connect(self.openEditMenu)
         self.problemOptionLayout.addWidget(self.editProblemButton)
 
-        self.delProblemButton = QPushButton("Usun")
+        self.delProblemButton = QPushButton("Delete")
         self.delProblemButton.released.connect(self.openDelMenu)
         self.problemOptionLayout.addWidget(self.delProblemButton)
 
@@ -220,21 +220,22 @@ class Ui(QWidget):
         self.canvas = PlotWidget(self)
         self.canvasToolBar = NavigationToolbar(self.canvas, self)
         self.canvasInfoPanel = QTextEdit()
-        # todo disable writing, custom font
+        # todo custom font
         self.info = QLabel("Running...")
         self.mainHelpLayout.addWidget(self.info, alignment=Qt.AlignCenter)
+        # todo automate linking chosenAlgorithm with correct algorithm from algorithm.py
         if self.chosenAlgorithm == "Bees Algorithm":
-            self.algorithm = alg.BeesAlgorithm(self.problem, self.canvas, self.canvasInfoPanel)
+            self.algorithm = alg.BeesAlgorithm(self, self.problem, self.canvas, self.canvasInfoPanel)
         self.algorithm.setup_algorithm(*params)
         self.algorithm.started.connect(self.block_layout)
         self.algorithm.finished.connect(self.alg_finish)
+        self.algorithm.stageChanged.connect(self.change_title)
         self.algorithm.start()
 
     def block_layout(self):
         self.setEnabled(False)
 
     def alg_finish(self):
-        # todo change size of canvas and window
         self.setEnabled(True)
         self.clearLayout(self.problemOptionLayout)
         self.problemOptionLayout.layout().deleteLater()
@@ -266,6 +267,15 @@ class Ui(QWidget):
         self.mainLayout.addWidget(self.canvasInfoPanel)
         self.algorithm.plot_stage()
         self.parent().setFixedSize(1224, 768)
+
+    def change_title(self, stage_nr, max_stage):
+        self.parent().setWindowTitle(f"Swarm algorithms - project - scene {stage_nr}/{max_stage}")
+
+    # def additional_info(self, which, *args):
+    #     if which == "table":
+    #         self.additionalWidget = QTableWidget(10, 4)
+    #         self.additionalWidget.setItem(0, 0, QTableWidgetItem("Kappa"))
+    #         self.mainLayout.addWidget(self.additionalWidget)
 
     def makeProblemsList(self):
         """Read data from json file with information about problems, then fill list widget with data"""
