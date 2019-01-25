@@ -106,7 +106,7 @@ class Problem(object):
             self.rpn_list.append("".join(temp))
         while not len(stack) == 0:
             self.rpn_list.append(stack.popleft())
-        print(self.rpn_list)
+        # print(self.rpn_list)
         return
 
     def change_symbols_rpn(self):

@@ -7,12 +7,12 @@ class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
         self.setWindowTitle("Swarm algorithms - project")
-        self.create_menu()
         self.gui = Ui(self)
+        self.create_menu()
         self.setCentralWidget(self.gui)
 
     def create_menu(self):
-        # todo create more options
         menu = self.menuBar()
-        setMenu = menu.addMenu("Settings")
-        setMenu.addAction("Exit", self.close)
+        setmenu = menu.addMenu("Settings")
+        setmenu.addAction("New run", self.gui.new_run)
+        setmenu.addAction("Exit", self.close)

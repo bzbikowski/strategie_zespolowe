@@ -20,6 +20,7 @@ class Ui(QWidget):
         super(Ui, self).__init__()
         self.setParent(parent)
         self.mainLayout = None
+        self.mapper = None
         self.algorithmLayout = None
         self.webPageView = None
         self.algorithmTitle = None
@@ -36,10 +37,27 @@ class Ui(QWidget):
         self.problem = None
         self.algorithm = None
         self.popup = None
+        self.problemList = None
+        self.problemOptionLayout = None
+        self.addProblemButton = None
+        self.editProblemButton = None
+        self.delProblemButton = None
+        self.canvas = None
+        self.canvasToolBar = None
+        self.canvasInfoPanel = None
+        self.infoLabel = None
+        self.canvasToolLayout = None
+        self.canvasButtonLayout = None
+        self.nextButton = None
+        self.prevButton = None
 
-        self.setupUI()
+        with open("config.json", "r") as f:
+            self.mapper = json.load(f)
+            self.mapper = self.mapper["maps"]
 
-    def setupUI(self):
+        self.setup_ui()
+
+    def setup_ui(self):
         """Create first layout for algorithm list and html view"""
         self.mainLayout = QHBoxLayout(self)
         self.algorithmLayout = QVBoxLayout()
@@ -51,12 +69,12 @@ class Ui(QWidget):
         self.algorithmLayout.addLayout(self.algorithmSplitLayout)
 
         self.algorithmList = QListWidget()
-        self.algorithmList.clicked.connect(self.chooseAlgorithm)
+        self.algorithmList.clicked.connect(self.choose_algorithm)
         self.algorithmSplitLayout.addWidget(self.algorithmList)
-        self.makeAlgorithmList()
+        self.make_algorithm_list()
 
         self.algorithmNext = QPushButton("Next", self)
-        self.algorithmNext.released.connect(self.goToNextLayout)
+        self.algorithmNext.released.connect(self.go_to_next_layout)
         self.algorithmSplitLayout.addWidget(self.algorithmNext)
 
         self.webPageView = QWebEngineView()
@@ -67,36 +85,40 @@ class Ui(QWidget):
         self.mainLayout.addLayout(self.algorithmLayout)
         self.mainLayout.addWidget(self.webPageView)
 
-    def makeAlgorithmList(self):
-        for file in os.listdir("./src/schema"):
-            error = False
-            with open(f"./src/schema/{file}") as f:
+    def make_algorithm_list(self):
+        for algorithm in self.mapper:
+            with open(f"./src/schema/{algorithm['schema']}.json") as f:
                 data = json.load(f)
-                for elem in data["elements"]:
-                    if "name" not in elem or "type" not in elem or "default" not in elem:
-                        error = True
-                        break
-                    if elem["type"] not in ["int", "float"]:
-                        error = True
-                        break
-                    if elem["type"] == "int":
-                        try:
-                            int(elem["default"])
-                        except ValueError as e:
-                            error = True
-                            break
-                    elif elem["type"] == "float":
-                        try:
-                            float(elem["default"])
-                        except ValueError as e:
-                            error = True
-                            break
-            if error:
-                continue
-            self.algorithmList.addItem(file[:-5])
+                if not self.check_if_schema_is_complete(data):
+                    continue
+                self.algorithmList.addItem(algorithm['schema'])
 
-    def chooseAlgorithm(self, index):
-        file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/{index.data()}.html"))
+    @staticmethod
+    def check_if_schema_is_complete(data):
+        for elem in data["elements"]:
+            if "name" not in elem or "type" not in elem or "default" not in elem:
+                return False
+            if elem["type"] not in ["int", "float"]:
+                return False
+            if elem["type"] == "int":
+                try:
+                    int(elem["default"])
+                except ValueError as e:
+                    return False
+            elif elem["type"] == "float":
+                try:
+                    float(elem["default"])
+                except ValueError as e:
+                    return False
+        return True
+
+    def choose_algorithm(self, index):
+        file_path = None
+        for algorithm in self.mapper:
+            if algorithm["schema"] == index.data():
+                file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/{algorithm['help']}.html"))
+                break
+        # todo check if file_path not null
         if os.path.exists(file_path):
             local_url = QUrl.fromLocalFile(file_path)
             self.webPageView.load(local_url)
@@ -105,7 +127,7 @@ class Ui(QWidget):
             local_url = QUrl.fromLocalFile(file_path)
             self.webPageView.load(local_url)
 
-    def goToNextLayout(self):
+    def go_to_next_layout(self):
         """Clear elements from first layout and make second layout for choosing parameters and problem"""
         try:
             self.chosenAlgorithm = self.algorithmList.currentItem().data(0)
@@ -114,11 +136,11 @@ class Ui(QWidget):
             QMessageBox.warning(self, "Algorithm not chosen", "Please, choose an algorithm before going further.")
             return
 
-        self.clearLayout(self.algorithmSplitLayout)
+        self.clear_layout(self.algorithmSplitLayout)
         self.algorithmSplitLayout.layout().deleteLater()
-        self.clearLayout(self.algorithmLayout)
+        self.clear_layout(self.algorithmLayout)
         self.algorithmLayout.layout().deleteLater()
-        self.clearLayout(self.mainLayout)
+        self.clear_layout(self.mainLayout)
 
         self.mainHelpLayout = QVBoxLayout()
         self.mainLayout.addLayout(self.mainHelpLayout)
@@ -131,40 +153,41 @@ class Ui(QWidget):
 
         self.problemList = QListWidget()
         self.problemLayout.addWidget(self.problemList)
-        self.makeProblemsList()
+        self.make_problems_list()
 
         self.problemOptionLayout = QHBoxLayout()
         self.problemLayout.addLayout(self.problemOptionLayout)
 
         self.addProblemButton = QPushButton("Add")
-        self.addProblemButton.released.connect(self.openAddMenu)
+        self.addProblemButton.released.connect(self.open_add_menu)
         self.problemOptionLayout.addWidget(self.addProblemButton)
 
         self.editProblemButton = QPushButton("Edit")
-        self.editProblemButton.released.connect(self.openEditMenu)
+        self.editProblemButton.released.connect(self.open_edit_menu)
         self.problemOptionLayout.addWidget(self.editProblemButton)
 
         self.delProblemButton = QPushButton("Delete")
-        self.delProblemButton.released.connect(self.openDelMenu)
+        self.delProblemButton.released.connect(self.open_del_menu)
         self.problemOptionLayout.addWidget(self.delProblemButton)
 
         self.parametersLayout = QVBoxLayout()
         self.parametersFullLayout.addLayout(self.parametersLayout)
 
-        self.makeParametersLayout()
+        self.make_parameters_layout()
 
         self.finalButton = QPushButton("Next")
-        self.finalButton.released.connect(self.startAlgorithm)
+        self.finalButton.released.connect(self.start_algorithm)
         self.mainHelpLayout.addWidget(self.finalButton)
 
-    def clearLayout(self, layout):
+    @staticmethod
+    def clear_layout(layout):
         """Clear all widgets from given layout"""
         while layout.count():
             child = layout.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
-    def makeParametersLayout(self):
+    def make_parameters_layout(self):
         """Create layout for algorithm's parameters"""
         data = None
         with open(f"src/schema/{self.chosenAlgorithm}.json", "r") as f:
@@ -189,7 +212,7 @@ class Ui(QWidget):
             layout.addWidget(text)
             self.parametersLayout.addLayout(layout)
 
-    def startAlgorithm(self):
+    def start_algorithm(self):
         """Check if inputed data is correct, gather all data and setup layout"""
         # take all parameters and problem params
         params = []
@@ -220,12 +243,20 @@ class Ui(QWidget):
         self.canvas = PlotWidget(self)
         self.canvasToolBar = NavigationToolbar(self.canvas, self)
         self.canvasInfoPanel = QTextEdit()
-        # todo custom font
-        self.info = QLabel("Running...")
-        self.mainHelpLayout.addWidget(self.info, alignment=Qt.AlignCenter)
-        # todo automate linking chosenAlgorithm with correct algorithm from algorithm.py
-        if self.chosenAlgorithm == "Bees Algorithm":
-            self.algorithm = alg.BeesAlgorithm(self, self.problem, self.canvas, self.canvasInfoPanel)
+        self.canvasInfoPanel.setStyleSheet("""
+        font-size: 20px;
+        """)
+        self.infoLabel = QLabel("Running...")
+        self.mainHelpLayout.addWidget(self.infoLabel, alignment=Qt.AlignCenter)
+
+        for algorithm in self.mapper:
+            if self.chosenAlgorithm == algorithm["schema"]:
+                import inspect
+                class_list = [m for m in inspect.getmembers(alg, inspect.isclass) if m[1].__module__ == alg.__name__]
+                for cl in class_list:
+                    if cl[0] == algorithm["algorithm"]:
+                        self.algorithm = cl[1](self, self.problem, self.canvas, self.canvasInfoPanel)
+
         self.algorithm.setup_algorithm(*params)
         self.algorithm.started.connect(self.block_layout)
         self.algorithm.finished.connect(self.alg_finish)
@@ -237,21 +268,21 @@ class Ui(QWidget):
 
     def alg_finish(self):
         self.setEnabled(True)
-        self.clearLayout(self.problemOptionLayout)
+        self.clear_layout(self.problemOptionLayout)
         self.problemOptionLayout.layout().deleteLater()
-        self.clearLayout(self.problemLayout)
+        self.clear_layout(self.problemLayout)
         self.problemLayout.layout().deleteLater()
         for i in range(self.parametersLayout.count()):
             layout = self.parametersLayout.takeAt(0)
-            self.clearLayout(layout)
+            self.clear_layout(layout)
             layout.layout().deleteLater()
-        self.clearLayout(self.parametersLayout)
+        self.clear_layout(self.parametersLayout)
         self.parametersLayout.layout().deleteLater()
-        self.clearLayout(self.parametersFullLayout)
+        self.clear_layout(self.parametersFullLayout)
         self.parametersFullLayout.layout().deleteLater()
-        self.clearLayout(self.mainHelpLayout)
+        self.clear_layout(self.mainHelpLayout)
         self.mainHelpLayout.layout().deleteLater()
-        self.clearLayout(self.mainLayout)
+        self.clear_layout(self.mainLayout)
         self.canvasToolLayout = QVBoxLayout()
         self.canvasToolLayout.addWidget(self.canvas)
         self.canvasToolLayout.addWidget(self.canvasToolBar)
@@ -259,10 +290,10 @@ class Ui(QWidget):
         self.canvasButtonLayout = QVBoxLayout()
         self.mainLayout.addLayout(self.canvasButtonLayout)
         self.nextButton = QPushButton("Next")
-        self.nextButton.released.connect(self.moveStageUp)
+        self.nextButton.released.connect(self.move_stage_up)
         self.canvasButtonLayout.addWidget(self.nextButton)
         self.prevButton = QPushButton("Prev")
-        self.prevButton.released.connect(self.moveStageDown)
+        self.prevButton.released.connect(self.move_stage_down)
         self.canvasButtonLayout.addWidget(self.prevButton)
         self.mainLayout.addWidget(self.canvasInfoPanel)
         self.algorithm.plot_stage()
@@ -271,13 +302,7 @@ class Ui(QWidget):
     def change_title(self, stage_nr, max_stage):
         self.parent().setWindowTitle(f"Swarm algorithms - project - scene {stage_nr}/{max_stage}")
 
-    # def additional_info(self, which, *args):
-    #     if which == "table":
-    #         self.additionalWidget = QTableWidget(10, 4)
-    #         self.additionalWidget.setItem(0, 0, QTableWidgetItem("Kappa"))
-    #         self.mainLayout.addWidget(self.additionalWidget)
-
-    def makeProblemsList(self):
+    def make_problems_list(self):
         """Read data from json file with information about problems, then fill list widget with data"""
         self.problems = []
         with open("src/problems.json", "r") as f:
@@ -286,24 +311,19 @@ class Ui(QWidget):
                 self.problemList.addItem(function["title"])
                 self.problems.append(Problem(function))
 
-    def moveStageUp(self):
-        if self.algorithm.plot_stage(True) == 1:
-            self.end_screen()
+    def move_stage_up(self):
+        self.algorithm.plot_stage(True)
 
-    def moveStageDown(self):
+    def move_stage_down(self):
         self.algorithm.plot_stage(False)
 
-    def end_screen(self):
-        # todo make end screen ?
-        print("KAPPA")
-
-    def openAddMenu(self):
+    def open_add_menu(self):
         if self.popup is not None and self.popup.isVisible():
             return
         self.popup = ProblemDialog(self)
         self.popup.show()
 
-    def openEditMenu(self):
+    def open_edit_menu(self):
         if self.popup is not None and self.popup.isVisible():
             return
         problem = None
@@ -318,7 +338,7 @@ class Ui(QWidget):
         self.popup = ProblemDialog(self, problem)
         self.popup.show()
 
-    def openDelMenu(self):
+    def open_del_menu(self):
         result = QMessageBox.information(self, "Delete element", "Are you sure you want to delete this element?",
                                          QMessageBox.Ok, QMessageBox.Cancel)
         if result == QMessageBox.Ok:
@@ -338,4 +358,7 @@ class Ui(QWidget):
     def reload_problem_list(self):
         self.problemList.clear()
         self.problems = []
-        self.makeProblemsList()
+        self.make_problems_list()
+
+    def new_run(self):
+        pass

@@ -31,7 +31,7 @@
       "default": "2"
     },
     {
-      "name": "Size of the area for ...",
+      "name": "Size of the area for random movement",
       "type": "float",
       "default": "0.5"
     },
@@ -41,7 +41,7 @@
       "default": "0.5"
     },
     {
-      "name": "Probabilty ...",
+      "name": "Probabilty for performing random movement",
       "type": "float",
       "default": "0.5"
     },

@@ -28,13 +28,21 @@ class BeeScout(Bee):
     def randomize_position(self, init_range):
         self.param = [random.random() * (prm[1] - prm[0]) + prm[0] for prm in init_range]
 
-    def search_local(self, area):
+    def search_local(self, area, bound):
         # for i, p in enumerate(self.param):
         #     self.param[i] = p + random.random() * 2 * area - area
         s = random.random() * 2 * area - area
         k = random.random() * 360
         x1 = self.param[0] + math.sin(k) * s
         x2 = self.param[1] + math.cos(k) * s
+        if x1 < bound[0][0]:
+            x1 = bound[0][0]
+        elif x1 > bound[0][1]:
+            x1 = bound[0][1]
+        if x2 < bound[1][0]:
+            x2 = bound[1][0]
+        elif x2 > bound[1][1]:
+            x2 = bound[1][1]
         self.param = [x1, x2]
         self.calculate_fitness()
 

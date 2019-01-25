@@ -1,0 +1,9 @@
+{
+  "maps": [
+    {
+      "algorithm": "BeesAlgorithm",
+      "schema": "Bees Algorithm",
+      "help": "Bees Algorithm"
+    }
+  ]
+}

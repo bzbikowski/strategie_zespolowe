@@ -11,6 +11,18 @@ class ProblemDialog(QWidget):
         self.lastSize = 0
         self.setFixedSize(400, 400)
         self.mainLayout = QGridLayout(self)
+
+        self.titleLabel = None
+        self.titleField = None
+        self.funLabel = None
+        self.funField = None
+        self.targetLabel = None
+        self.targetField = None
+        self.paramLabel = None
+        self.paramField = None
+        self.saveButton = None
+        self.cancelButton = None
+
         self.make_layout()
         if problem is not None:
             self.previousTitle = None
@@ -66,7 +78,6 @@ class ProblemDialog(QWidget):
             return
         else:
             for index in range(self.lastSize, number):
-                print(index)
                 label = QLabel(f"Arg{index}")
                 field = QLineEdit()
                 field.textChanged.connect(self.check_unsaved)
@@ -117,11 +128,10 @@ class ProblemDialog(QWidget):
                                 QMessageBox.Ok)
             return
         min_v, max_v = self.parse_arguments()
-        if min_v is None and max_v is None:
+        if min_v is None:
             # error while parsing arguments
-            # todo say especially which argument must be corrected
             QMessageBox.warning(self, "Parsing error",
-                                "There is a problem with one of the arguments."
+                                f"There is a problem with one of the arguments in {max_v}."
                                 " Please, check if inputed data is correct and in the correct format",
                                 QMessageBox.Ok)
             return
@@ -138,7 +148,7 @@ class ProblemDialog(QWidget):
             data["functions"][index] = {
                 "title": self.titleField.text(),
                 "fun": self.funField.text(),
-                "target": self.targetField.text(),
+                "target": float(self.targetField.text()),
                 "x_param": int(self.paramField.text()),
                 "x_min": min_v,
                 "x_max": max_v}
@@ -151,7 +161,7 @@ class ProblemDialog(QWidget):
                     return
             form = {"title": self.titleField.text(),
                     "fun": self.funField.text(),
-                    "target": self.targetField.text(),
+                    "target": float(self.targetField.text()),
                     "x_param": int(self.paramField.text()),
                     "x_min": min_v,
                     "x_max": max_v}
@@ -175,6 +185,6 @@ class ProblemDialog(QWidget):
                 max_vector.append(float(x))
             except ValueError as e:
                 # given values are not type of float
-                return None, None
+                return None, self.mainLayout.itemAtPosition(i, 2).widget().text()
 
         return min_vector, max_vector
