@@ -11,4 +11,6 @@ Algorytmy:  ACO, BA, FA, GSO. IWD, CSS, GSA, RFD, SDS
 
 #### Project under development.
 
-...
+Todo things:
+* add docs
+* ...
