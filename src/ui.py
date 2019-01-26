@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 from PySide2.QtCore import QUrl, QLocale, Qt
 from PySide2.QtGui import QIntValidator, QDoubleValidator
@@ -51,7 +52,9 @@ class Ui(QWidget):
         self.nextButton = None
         self.prevButton = None
 
-        with open("config.json", "r") as f:
+        print(os.path.dirname(sys.argv[0]))
+
+        with open("./config.json", "r") as f:
             self.mapper = json.load(f)
             self.mapper = self.mapper["maps"]
 
@@ -78,7 +81,7 @@ class Ui(QWidget):
         self.algorithmSplitLayout.addWidget(self.algorithmNext)
 
         self.webPageView = QWebEngineView()
-        file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "help/default.html"))
+        file_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/help/default.html"))
         local_url = QUrl.fromLocalFile(file_path)
         self.webPageView.load(local_url)
 
@@ -87,7 +90,7 @@ class Ui(QWidget):
 
     def make_algorithm_list(self):
         for algorithm in self.mapper:
-            with open(f"./src/schema/{algorithm['schema']}.json") as f:
+            with open(f"./resources/schema/{algorithm['schema']}.json") as f:
                 data = json.load(f)
                 if not self.check_if_schema_is_complete(data):
                     continue
@@ -116,14 +119,15 @@ class Ui(QWidget):
         file_path = None
         for algorithm in self.mapper:
             if algorithm["schema"] == index.data():
-                file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/{algorithm['help']}.html"))
+                file_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]),
+                                                         f"resources/help/{algorithm['help']}.html"))
                 break
         # todo check if file_path not null
         if os.path.exists(file_path):
             local_url = QUrl.fromLocalFile(file_path)
             self.webPageView.load(local_url)
         else:
-            file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"help/none.html"))
+            file_path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/help/none.html"))
             local_url = QUrl.fromLocalFile(file_path)
             self.webPageView.load(local_url)
 
@@ -189,8 +193,9 @@ class Ui(QWidget):
 
     def make_parameters_layout(self):
         """Create layout for algorithm's parameters"""
+        path = os.path.join(os.path.dirname(sys.argv[0]), f"resources/schema/{self.chosenAlgorithm}.json")
         data = None
-        with open(f"src/schema/{self.chosenAlgorithm}.json", "r") as f:
+        with open(path, "r") as f:
             data = json.load(f)
         for element in data['elements']:
             layout = QHBoxLayout()
@@ -305,7 +310,8 @@ class Ui(QWidget):
     def make_problems_list(self):
         """Read data from json file with information about problems, then fill list widget with data"""
         self.problems = []
-        with open("src/problems.json", "r") as f:
+        path = os.path.join(os.path.dirname(sys.argv[0]), "resources/problems.json")
+        with open(path, "r") as f:
             data = json.load(f)
             for function in data["functions"]:
                 self.problemList.addItem(function["title"])
@@ -343,7 +349,8 @@ class Ui(QWidget):
                                          QMessageBox.Ok, QMessageBox.Cancel)
         if result == QMessageBox.Ok:
             item = self.problemList.takeItem(self.problemList.currentRow())
-            with open("./src/problems.json", 'r') as f:
+            path = os.path.join(os.path.dirname(sys.argv[0]), "resources/problems.json")
+            with open(path, 'r') as f:
                 data = json.load(f)
                 for fun in self.problems:
                     if fun.title == item.data(0):
@@ -352,7 +359,7 @@ class Ui(QWidget):
                         data["functions"].pop(i)
                         break
 
-            with open("./src/problems.json", 'w') as f:
+            with open(path, 'w') as f:
                 json.dump(data, f, indent=4)
 
     def reload_problem_list(self):

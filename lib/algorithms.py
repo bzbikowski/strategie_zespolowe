@@ -1,6 +1,8 @@
 import copy
 import math
+import os
 import random
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -225,7 +227,8 @@ class BeesAlgorithm(BaseAlg):
         elif self.index == 9:
             self.plot_best_values(ax)
         elif self.index == 10:
-            im = Image.open("./resources/placeholder.png")
+            path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/images/placeholder.png"))
+            im = Image.open(path)
             self.panel.setText("This is the last slide of the presentation."
                                " In 'Options' menu you can take a look on another algorithm.")
             ax.imshow(im)
@@ -413,7 +416,7 @@ class BeesAlgorithm(BaseAlg):
         time = range(len(self.final_data['best_value_per_gen']))
         error = list(map(lambda x: x - self.target, self.final_data['best_value_per_gen']))
         ax.plot(time, error)
-        ax.set_title("Error between generations")
+        ax.set_title("Absolute error between generations")
         ax.set_xlabel("Generation")
         ax.set_ylabel("Value of error")
         self.panel.setText(f"On the left, you can see ...")

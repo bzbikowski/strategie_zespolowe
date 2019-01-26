@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Schema:
+<ul>
+    <li><i>begin</i></li>
+    <li>Generate randomly starting population of solutions</li>
+    <li><b>repreat</b></li>
+    <li>Evaluate the quality of solutions</li>
+    <li>Select places to search the neighborhood</li>
+    <li>Choose recruits for selected sites (more bees for the best sites) and evaluate them</li>
+    <li>Select the best bee in each area</li>
+    <li>Assign random movements to the remaining bees and evaluate them</li>
+    <li><b>until</b> end criterion is not met</li>
+    <li><i>end</i></li>
+</ul>
+Parameters:
+<ul>
+    <li>number_of_scouts -> number of scout bees(n)</li>
+    <li>number_of_chosen_places -> number of places selected n of those visited(m)</li>
+    <li>number_of_best_places -> number of best areas for the m places visited(e)</li>
+    <li>number_of_recruits_for_best -> number of recruiters for the best e areas (nep)</li>
+    <li>number_of_recruits_for_other -> number of recruiters for other (m-e) selected areas (nsp)</li>
+    <li>init_size_of_area -> the initial size of the area for random movement (ngh)</li>
+    <li>init_size_of_neighbourhood -> the initial size of the area for neighbourhood search</li>
+    <li>bee_search_prob -> the probalility that the selected will perform random movement</li>
+    <li>stop_criteria -> the minimum required difference between target and bees to stop algorithm</li>
+</ul>
+
+</body>
+</html>

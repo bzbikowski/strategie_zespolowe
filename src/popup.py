@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 
 from PySide2.QtGui import QIntValidator, QCloseEvent
 from PySide2.QtWidgets import QWidget, QGridLayout, QLineEdit, QLabel, QMessageBox, QPushButton
@@ -137,7 +139,8 @@ class ProblemDialog(QWidget):
             return
 
         data = None
-        with open("./src/problems.json", "r") as f:
+        path = os.path.join(os.path.dirname(sys.argv[0]), "resources/problems.json")
+        with open(path, "r") as f:
             data = json.load(f)
         if self.editing:
             index = -1
@@ -167,7 +170,7 @@ class ProblemDialog(QWidget):
                     "x_max": max_v}
             data["functions"].append(form)
 
-        with open("./src/problems.json", "w") as f:
+        with open(path, "w") as f:
             json.dump(data, f, indent=4)
 
         QMessageBox.information(self, "Save complete", "Data is now saved. ", QMessageBox.Ok)
