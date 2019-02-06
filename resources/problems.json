@@ -1,21 +1,8 @@
 {
     "functions": [
         {
-            "title": "Przyklad",
-            "fun": "x[0]^2 + x[1]^2",
-            "target": 0.0,
-            "x_param": 2,
-            "x_min": [
-                -5,
-                -5
-            ],
-            "x_max": [
-                5,
-                5
-            ]
-        },
-        {
             "title": "Ackley",
+            "type": "optimum",
             "fun": "(-20)*exp(-0.2*(0.5*(x[0]^2+x[1]^2)^(1/2)))-exp(0.5*(cos(2*pi*x[0])+cos(2*pi*x[1])))+e+20",
             "target": 0.0,
             "x_param": 2,
@@ -30,6 +17,7 @@
         },
         {
             "title": "Rastrigin",
+            "type": "optimum",
             "fun": "20+x[0]^2-10*cos(2*pi*x[0])+x[1]^2-10*cos(2*pi*x[1])",
             "target": 0.0,
             "x_param": 2,
@@ -40,6 +28,18 @@
             "x_max": [
                 5.12,
                 5.12
+            ]
+        },
+        {
+            "title": "Map of random cities (size: 200x200)",
+            "type": "tsp",
+            "size": [
+                -100,
+                100
+            ],
+            "cities": 10,
+            "indicators": [
+                "distance"
             ]
         }
     ]

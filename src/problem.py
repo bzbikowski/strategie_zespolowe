@@ -2,6 +2,8 @@ import collections
 import math
 import operator
 
+import numpy as np
+
 
 class Problem(object):
     def __init__(self, data_dict):
@@ -148,6 +150,63 @@ class Problem(object):
                 arg1 = float(stack.popleft())
                 stack.appendleft(ops[token](arg1, arg2))
         return stack[0]
+
+    def __str__(self):
+        return self.title
+
+
+class ProblemTsp(object):
+    def __init__(self, data_dict):
+        self.title = data_dict["title"]
+        self.size = data_dict["size"]
+        self.no_of_cities = 131
+        # self.no_of_cities = data_dict["cities"]
+        self.indicators = data_dict["indicators"]
+
+        self.cities = None
+        self.dist_matrix = None
+
+        self.init_problem()
+
+    def random_position(self):
+        import random
+        return random.random() * (self.size[1] - self.size[0]) + self.size[0]
+
+    def init_problem(self):
+        self.cities = np.loadtxt("./resources/maps/map_237points.csv", delimiter=' ')
+        # self.cities = [(x, y) for (x, y) in zip((self.random_position() for _ in range(self.no_of_cities)),
+        #                                         (self.random_position() for _ in range(self.no_of_cities)))]
+
+        self.dist_matrix = self.create_dist_matrix()
+
+    def create_dist_matrix(self):
+        matrix = np.zeros((self.no_of_cities, self.no_of_cities))
+        for i in range(self.no_of_cities):
+            for j in range(i + 1, self.no_of_cities):
+                if not i == j:
+                    matrix[i][j] = matrix[j][i] = self.dist(self.cities[i], self.cities[j])
+        return matrix
+
+    @staticmethod
+    def dist(c1, c2):
+        return math.sqrt((c2[0] - c1[0]) ** 2 + (c2[1] - c1[1]) ** 2)
+
+    def calculate(self, seq):
+        distance = 0
+        city_pop = -1
+        starting_point = -1
+        first_city = True
+        for city in seq:
+            if first_city:
+                starting_point = city
+                first_city = False
+            elif not first_city and distance == 0:
+                distance += self.dist_matrix[starting_point, city]
+            else:
+                distance += self.dist_matrix[city_pop, city]
+            city_pop = city
+        distance += self.dist_matrix[city_pop, starting_point]
+        return distance
 
     def __str__(self):
         return self.title

@@ -1,0 +1,40 @@
+{
+  "type": "tsp",
+  "elements": [
+    {
+      "name": "Number of generations",
+      "type": "int",
+      "default": "500"
+    },
+    {
+      "name": "Number of ants",
+      "type": "int",
+      "default": "10"
+    },
+    {
+      "name": "Alpha",
+      "type": "float",
+      "default": "0.1"
+    },
+    {
+      "name": "Beta",
+      "type": "float",
+      "default": "2.0"
+    },
+    {
+      "name": "Decay",
+      "type": "float",
+      "default": "0.1"
+    },
+    {
+      "name": "Greedness",
+      "type": "float",
+      "default": "0.9"
+    },
+    {
+      "name": "Local phero coef",
+      "type": "float",
+      "default": "0.1"
+    }
+  ]
+}

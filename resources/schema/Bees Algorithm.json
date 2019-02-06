@@ -1,4 +1,5 @@
 {
+  "type": "optimize",
   "elements": [
     {
       "name": "Number of generations",
@@ -13,42 +14,37 @@
     {
       "name": "Number of chosen places from all visited",
       "type": "int",
-      "default": "3"
+      "default": "4"
     },
     {
       "name": "Number of best places from all chosen",
       "type": "int",
-      "default": "1"
+      "default": "2"
     },
     {
       "name": "Number of reqruits for best places",
       "type": "int",
-      "default": "4"
+      "default": "5"
     },
     {
       "name": "Number of reqruits for other places",
       "type": "int",
-      "default": "2"
+      "default": "3"
     },
     {
       "name": "Size of the area for random movement",
       "type": "float",
-      "default": "0.5"
+      "default": "1.5"
     },
     {
       "name": "Size of the area for neighbourhood search",
       "type": "float",
-      "default": "0.5"
+      "default": "1.0"
     },
     {
       "name": "Probabilty for performing random movement",
       "type": "float",
-      "default": "0.5"
-    },
-    {
-      "name": "Stop criteria",
-      "type": "float",
-      "default": "1e-2"
+      "default": "1.0"
     }
   ]
 }

@@ -15,4 +15,7 @@ class Window(QMainWindow):
         menu = self.menuBar()
         setmenu = menu.addMenu("Settings")
         setmenu.addAction("New run", self.gui.new_run)
+        modemenu = setmenu.addMenu("Choose mode")
+        modemenu.addAction("Find minimum", lambda: self.gui.change_problem(0))
+        modemenu.addAction("Traveling salesman problem", lambda: self.gui.change_problem(1))
         setmenu.addAction("Exit", self.close)

@@ -12,7 +12,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import lib.algorithms as alg
 from src.frame import PlotWidget
 from src.popup import ProblemDialog
-from src.problem import Problem
+from src.problem import Problem, ProblemTsp
 
 
 class Ui(QWidget):
@@ -52,7 +52,7 @@ class Ui(QWidget):
         self.nextButton = None
         self.prevButton = None
 
-        print(os.path.dirname(sys.argv[0]))
+        self.algorithmMode = 0
 
         with open("./config.json", "r") as f:
             self.mapper = json.load(f)
@@ -88,13 +88,28 @@ class Ui(QWidget):
         self.mainLayout.addLayout(self.algorithmLayout)
         self.mainLayout.addWidget(self.webPageView)
 
+    def change_problem(self, nr):
+        self.algorithmMode = nr
+        # if nr == 0:
+        #     pass
+        # elif nr == 1:
+        #     pass
+        # else:
+        #     pass
+        self.reload_algorithm_list()
+
     def make_algorithm_list(self):
         for algorithm in self.mapper:
             with open(f"./resources/schema/{algorithm['schema']}.json") as f:
                 data = json.load(f)
                 if not self.check_if_schema_is_complete(data):
                     continue
-                self.algorithmList.addItem(algorithm['schema'])
+                if self.algorithmMode == 0:
+                    if data["type"] == "optimize":
+                        self.algorithmList.addItem(algorithm['schema'])
+                elif self.algorithmMode == 1:
+                    if data["type"] == "tsp":
+                        self.algorithmList.addItem(algorithm['schema'])
 
     @staticmethod
     def check_if_schema_is_complete(data):
@@ -267,6 +282,7 @@ class Ui(QWidget):
         self.algorithm.finished.connect(self.alg_finish)
         self.algorithm.stageChanged.connect(self.change_title)
         self.algorithm.start()
+        # todo progress bar
 
     def block_layout(self):
         self.setEnabled(False)
@@ -314,8 +330,14 @@ class Ui(QWidget):
         with open(path, "r") as f:
             data = json.load(f)
             for function in data["functions"]:
-                self.problemList.addItem(function["title"])
-                self.problems.append(Problem(function))
+                if self.algorithmMode == 0:
+                    if function["type"] == "optimum":  # todo
+                        self.problemList.addItem(function["title"])
+                        self.problems.append(Problem(function))
+                elif self.algorithmMode == 1:
+                    if function["type"] == "tsp":
+                        self.problemList.addItem(function["title"])
+                        self.problems.append(ProblemTsp(function))
 
     def move_stage_up(self):
         self.algorithm.plot_stage(True)
@@ -324,12 +346,18 @@ class Ui(QWidget):
         self.algorithm.plot_stage(False)
 
     def open_add_menu(self):
+        if self.algorithmMode == 1:
+            self.notimplemented()
+            return
         if self.popup is not None and self.popup.isVisible():
             return
         self.popup = ProblemDialog(self)
         self.popup.show()
 
     def open_edit_menu(self):
+        if self.algorithmMode == 1:
+            self.notimplemented()
+            return
         if self.popup is not None and self.popup.isVisible():
             return
         problem = None
@@ -345,6 +373,9 @@ class Ui(QWidget):
         self.popup.show()
 
     def open_del_menu(self):
+        if self.algorithmMode == 1:
+            self.notimplemented()
+            return
         result = QMessageBox.information(self, "Delete element", "Are you sure you want to delete this element?",
                                          QMessageBox.Ok, QMessageBox.Cancel)
         if result == QMessageBox.Ok:
@@ -367,5 +398,15 @@ class Ui(QWidget):
         self.problems = []
         self.make_problems_list()
 
+    def reload_algorithm_list(self):
+        self.algorithmList.clear()
+        self.make_algorithm_list()
+
     def new_run(self):
-        pass
+        self.notimplemented()
+
+    def notimplemented(self):
+        # todo do a decorator
+        _ = QMessageBox.information(self, "Not implemented", "This function is not yet implemented. ",
+                                    QMessageBox.Ok)
+        return

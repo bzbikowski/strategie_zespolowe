@@ -4,6 +4,11 @@
       "algorithm": "BeesAlgorithm",
       "schema": "Bees Algorithm",
       "help": "Bees Algorithm"
+    },
+    {
+      "algorithm": "AntColonySystem",
+      "schema": "Ant Colony System",
+      "help": "Ant Colony System"
     }
   ]
 }

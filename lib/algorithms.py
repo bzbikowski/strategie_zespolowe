@@ -9,6 +9,7 @@ import numpy as np
 from PIL import Image
 from PySide2.QtCore import QThread, Signal
 
+from lib.individual import AntWorker
 from lib.individual import BeeScout, BeeWorker
 
 
@@ -73,7 +74,6 @@ class BeesAlgorithm(BaseAlg):
         self.best_result = 0
         self.best_current_value = 999999
         self.max_global_value = self.target
-        self.finish = None
 
         self.max_generation = None
         self.number_of_scouts = None
@@ -94,7 +94,7 @@ class BeesAlgorithm(BaseAlg):
 
         self.final_data = {"best_result": 0,
                            "best_value": 0,
-                           "no_of_gens": 0,
+                           "best_gen": 0,
                            "best_value_per_gen": [],
                            "scouts_per_gen": [],
                            "workers_per_gen": [],
@@ -109,7 +109,7 @@ class BeesAlgorithm(BaseAlg):
                         number_of_best_places=1,
                         number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
                         init_size_of_neighbourhood=0.5,
-                        bee_search_prob=0.5, stop_criteria=1e-3):
+                        bee_search_prob=0.5):
         self.max_generation = max_generation
         self.number_of_scouts = number_of_scouts
         self.number_of_chosen_places = number_of_chosen_places
@@ -118,7 +118,6 @@ class BeesAlgorithm(BaseAlg):
         self.number_of_recruits_for_other = number_of_recruits_for_other
         self.area_size = init_size_of_area
         self.bee_search_prob = bee_search_prob
-        self.stop_criteria = stop_criteria
         self.neigh_size = init_size_of_neighbourhood
         self.chosen_places = number_of_chosen_places
         self.best_places = number_of_best_places
@@ -136,10 +135,8 @@ class BeesAlgorithm(BaseAlg):
                 self.best_current_value = self.scouts[0].f_value
                 self.final_data["best_value"] = self.scouts[0].f_value
                 self.final_data["best_result"] = self.scouts[0].param
+                self.final_data["best_gen"] = generation
             self.final_data["best_value_per_gen"].append(self.best_current_value)
-            if self.final_data["best_value"] - self.target < self.stop_criteria:
-                self.finish = 'stop'
-                break
             data_workers = []
             best_places_workers = []
             for i in range(self.number_of_best_places):
@@ -176,11 +173,9 @@ class BeesAlgorithm(BaseAlg):
                 scout = bee.promote()
                 self.scouts.append(scout)
             generation += 1
-        if self.finish is None:
-            self.finish = 'gen'
 
     def plot_stage(self, direction=None):
-        max_index = 10
+        max_index = 11
         if direction is None:
             self.index = 0
         elif direction:
@@ -223,10 +218,12 @@ class BeesAlgorithm(BaseAlg):
             self.plot_scouts_second(ax)
         elif self.index == 8:
             self.plot_base(ax)
-            self.plot_scouts_last(ax)
+            self.plot_scouts_best(ax)
         elif self.index == 9:
-            self.plot_best_values(ax)
+            self.plot_best_value(ax)
         elif self.index == 10:
+            self.plot_mean_value(ax)
+        elif self.index == 11:
             path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/images/placeholder.png"))
             im = Image.open(path)
             self.panel.setText("This is the last slide of the presentation."
@@ -234,7 +231,8 @@ class BeesAlgorithm(BaseAlg):
             ax.imshow(im)
         self.canvas.draw()
 
-    def buffor_base_map(self):
+    def buffer_base_map(self):
+        # todo do this in thread (don't freeze ui)
         res = 500
 
         x = np.linspace(self.init_data[0][0], self.init_data[0][1], res)
@@ -252,13 +250,12 @@ class BeesAlgorithm(BaseAlg):
 
     def plot_base(self, ax):
         if self.X is None:
-            self.buffor_base_map()
+            self.buffer_base_map()
         levels = np.linspace(self.target, self.max_global_value, 50)
         cs = ax.contourf(self.X, self.Y, self.Z, levels, cmap=plt.get_cmap('summer'))
         cbar = self.canvas.fig.colorbar(cs)
 
     def plot_scouts(self, ax, gen):
-        # Wyświetl skautów z wartościami
         for val, par in self.final_data['scouts_per_gen'][gen]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
@@ -267,7 +264,6 @@ class BeesAlgorithm(BaseAlg):
                            f" The current fitness of each bee is displayed above their position.")
 
     def plot_areas_with_best(self, ax, gen):
-        # Wyszczególnij wybranych skautów i narysuj dla nich okrąg
         index = 0
         for val, par in self.final_data['scouts_per_gen'][gen]:
             if index < self.best_places:
@@ -287,7 +283,6 @@ class BeesAlgorithm(BaseAlg):
                            f" the rest is marked with blue circle.")
 
     def plot_workers(self, ax, gen):
-        # Dla każdego wyszczególnionego skauta, narysuj ich pracowników
         index = 0
         for val, par in self.final_data['scouts_per_gen'][gen]:
             if index < self.best_places:
@@ -308,7 +303,6 @@ class BeesAlgorithm(BaseAlg):
                            f" {self.number_of_recruits_for_other} workers.")
 
     def plot_best_workers(self, ax, gen):
-        # Pracownicy dla pierwszego najlepszego skauta
         val, par = self.final_data['scouts_per_gen'][gen][0]
         color = 'r'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
@@ -330,7 +324,6 @@ class BeesAlgorithm(BaseAlg):
                            f" This worker will replace scout, which found this area, in next generation. ")
 
     def plot_chosen_workers(self, ax, gen):
-        # pracownicy dla pierwszego wybranego skauta
         val, par = self.final_data['scouts_per_gen'][gen][self.best_places]
         color = 'b'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
@@ -386,37 +379,140 @@ class BeesAlgorithm(BaseAlg):
                            f" (red circle) and corresponding vectors")
 
     def plot_scouts_second(self, ax):
-        # Wyświetl skautów z wartościami
         for val, par in self.final_data['scouts_per_gen'][1]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
-        self.panel.setText(f"These steps are repeated, until number of generation reaches {self.max_generation} or "
-                           f"the difference between the minimum value of the function"
-                           f" and fitness of any scout will not exceed {self.stop_criteria:.0e}.")
+        self.panel.setText(f"These steps are repeated, until number of generation reaches {self.max_generation}.")
 
-    def plot_scouts_last(self, ax):
-        # Wyświetl skautów z wartościami
-        for val, par in self.final_data['scouts_per_gen'][len(self.final_data['scouts_per_gen']) - 1]:
+    def plot_scouts_best(self, ax):
+        for val, par in self.final_data['scouts_per_gen'][self.final_data['best_gen']]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
-        if self.finish == 'stop':
-            self.panel.setText(f"This is the last iteration of the algorithm."
-                               f" Here, the best bee reached value {self.final_data['best_value']:.4f},"
-                               f" which was enough to trigger stop criteria.")
-        elif self.finish == 'gen':
-            self.panel.setText(f"This is the last iteration of the algorithm."
-                               f" Minimum error was not reached, so an algorithm stopped "
-                               f"working afrer {self.max_generation} generations.")
-        else:
-            self.panel.setText("Weird bug!")
+        self.panel.setText(f"This is the best iteration of the algorithm."
+                           f" Here, the best bee reached value {self.final_data['best_value']:.4f}.")
 
-    def plot_best_values(self, ax):
+    def plot_best_value(self, ax):
         time = range(len(self.final_data['best_value_per_gen']))
         error = list(map(lambda x: x - self.target, self.final_data['best_value_per_gen']))
         ax.plot(time, error)
         ax.set_title("Absolute error between generations")
         ax.set_xlabel("Generation")
         ax.set_ylabel("Value of error")
-        self.panel.setText(f"On the left, you can see ...")
+        self.panel.setText(f"On the left, you can see a chart presenting absolute error between minimum value"
+                           f" of the problem and the best bee found in all generations. ")
+
+    def plot_mean_value(self, ax):
+        time = range(len(self.final_data['scouts_per_gen']))
+        values = []
+        for gen in self.final_data['scouts_per_gen']:
+            suma = 0
+            for scout in gen:
+                suma += scout[0]
+            suma /= len(gen)
+            values.append(suma)
+        ax.plot(time, values)
+        ax.set_title("Mean value in each generation")
+        ax.set_xlabel("Generation")
+        ax.set_ylabel("Mean value")
+        self.panel.setText(f"This chart shows mean values of all scouts in each generation.")
+
+
+class AntColonySystem(BaseAlg):
+    def __init__(self, parent, fun, canvas, panel):
+        super(AntColonySystem, self).__init__(parent, fun, canvas, panel)
+        self.fun = fun
+        self.max_generation = None
+        self.number_of_ants = None
+        self.size_of_pheromone = None
+        self.number_of_towns = None
+        self.index = None
+
+        self.population = None
+        self.pheromones = None
+
+        self.alpha = None  # history coefficient
+        self.beta = None
+        self.decay = None
+        self.greediness = None
+        self.local_phero_c = None
+        self.init_phero_val = None
+
+        self.best_cost = float('inf')
+        self.best_solution = None
+        self.best_solution_per_gen = []
+
+    def setup_algorithm(self, max_generation=500, number_of_ants=10, alpha=0.1, beta=2.0,
+                        decay=0.1, greediness=0.9, local_phero_coef=0.1):
+        self.max_generation = max_generation
+        self.number_of_ants = number_of_ants
+        self.alpha = alpha
+        self.beta = beta
+        self.decay = decay
+        self.greediness = greediness
+        self.local_phero_c = local_phero_coef
+        self.init_phero_val = 1 / (self.fun.no_of_cities * self.fun.no_of_cities)
+        self.pheromones = [[self.init_phero_val for _ in range(self.fun.no_of_cities)]
+                           for _ in range(self.fun.no_of_cities)]
+
+    def create_population(self):
+        return [AntWorker() for _ in range(self.number_of_ants)]
+
+    def run(self):
+        for gen in range(self.max_generation):
+            population = self.create_population()
+            for ant in population:
+                ant.choose_path(self, self.fun.dist_matrix)
+                ant.calculate_fitness(self.fun.calculate)
+                if ant.total_cost < self.best_cost:
+                    self.best_cost = ant.total_cost
+                    self.best_solution = ant.path
+                ant.local_update_pheromone(self)
+                self.pheromones = np.add(self.pheromones, np.array(ant.local_pheromone))
+            population.sort()
+            self.best_solution_per_gen.append(self.best_cost)
+            self.global_update_pheromone(population[0])
+
+    def global_update_pheromone(self, best_ant):
+        for i in range(len(self.pheromones) - 1):
+            x = best_ant.path[i]
+            y = best_ant.path[i + 1]
+            new_value = (1 - self.decay) * self.pheromones[x][y] + self.decay * (1 / best_ant.total_cost)
+            self.pheromones[x][y] = new_value
+            self.pheromones[y][x] = new_value
+        x = best_ant.path[len(self.pheromones) - 1]
+        y = best_ant.path[0]
+        new_value = (1 - self.decay) * self.pheromones[x][y] + self.decay * (1 / best_ant.total_cost)
+        self.pheromones[x][y] = new_value
+        self.pheromones[y][x] = new_value
+
+    def plot_stage(self, direction=None):
+        if direction is None:
+            self.index = 0
+        elif direction:
+            self.index += 1
+        else:
+            self.index -= 1
+        self.canvas.fig.clf()
+        ax = self.canvas.fig.add_subplot(111)
+        if self.index == 0:
+            self.plot_result_per_gen(ax)
+        else:
+            self.plot_best_path(ax)
+        self.canvas.draw()
+
+    def plot_result_per_gen(self, ax):
+        time = range(len(self.best_solution_per_gen))
+        ax.plot(time, self.best_solution_per_gen)
+        ax.set_title("Best distance per generations")
+        ax.set_xlabel("Generation")
+        ax.set_ylabel("Best distance")
+        self.panel.setText(f"Najlepsza wartość: {self.best_cost}\nExcpected: 564")
+
+    def plot_best_path(self, ax):
+        # http://www.math.uwaterloo.ca/tsp/vlsi/xqf131.tour.html
+        cities = np.array(self.fun.cities)
+        cities = cities[self.best_solution, :]
+        cities = np.concatenate((cities, [cities[0]]), axis=0)
+        ax.plot(cities[:, 0], cities[:, 1], 'bo--')
