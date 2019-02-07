@@ -87,18 +87,20 @@ class BeesAlgorithm(BaseAlg):
         self.neigh_size = None
         self.chosen_places = None
         self.best_places = None
+        self.number_of_iteration = None
 
         self.X = None
         self.Y = None
         self.Z = None
 
-        self.final_data = {"best_result": 0,
-                           "best_value": 0,
-                           "best_gen": 0,
-                           "best_value_per_gen": [],
-                           "scouts_per_gen": [],
-                           "workers_per_gen": [],
-                           "other_scouts_per_gen": []}
+        # todo multiple iterations
+        self.final_data = {"best_result_per_iter": [],
+                           "best_value_per_iter": [],
+                           "best_gen_per_iter": [],
+                           "best_value_vec": [],
+                           "scouts": [],
+                           "workers": [],
+                           "other_scouts": []}
 
     def initiate_population(self, fun, init_data, number_of_scouts):
         self.scouts = [BeeScout(fun) for _ in range(number_of_scouts)]
@@ -109,7 +111,7 @@ class BeesAlgorithm(BaseAlg):
                         number_of_best_places=1,
                         number_of_recruits_for_best=4, number_of_recruits_for_other=2, init_size_of_area=0.2,
                         init_size_of_neighbourhood=0.5,
-                        bee_search_prob=0.5):
+                        bee_search_prob=0.5, number_of_iteration=(5, 15, 50)):
         self.max_generation = max_generation
         self.number_of_scouts = number_of_scouts
         self.number_of_chosen_places = number_of_chosen_places
@@ -121,58 +123,84 @@ class BeesAlgorithm(BaseAlg):
         self.neigh_size = init_size_of_neighbourhood
         self.chosen_places = number_of_chosen_places
         self.best_places = number_of_best_places
-        self.initiate_population(self.function, self.init_data, number_of_scouts)
+        self.number_of_iteration = number_of_iteration
+        # self.initiate_population(self.function, self.init_data, number_of_scouts)
 
     def run(self):
-        generation = 0
-        while generation < self.max_generation:
-            for scout in self.scouts:
-                scout.calculate_fitness()
-            self.scouts.sort(reverse=False)
-            self.final_data["scouts_per_gen"].append(
-                [(copy.deepcopy(s.f_value), copy.deepcopy(s.param)) for s in self.scouts])
-            if self.scouts[0].f_value < self.best_current_value:
-                self.best_current_value = self.scouts[0].f_value
-                self.final_data["best_value"] = self.scouts[0].f_value
-                self.final_data["best_result"] = self.scouts[0].param
-                self.final_data["best_gen"] = generation
-            self.final_data["best_value_per_gen"].append(self.best_current_value)
-            data_workers = []
-            best_places_workers = []
-            for i in range(self.number_of_best_places):
-                local_workers = []
-                for j in range(self.number_of_recruits_for_best):
-                    worker = BeeWorker(self.scouts[0])
-                    worker.search_neighbourhood(self.neigh_size)
-                    local_workers.append(worker)
-                local_workers.sort(reverse=False)
-                data_workers.append(local_workers)
-                self.scouts.pop(0)
-                best_places_workers.append(local_workers[0])
+        import time
+        t1 = time.time()
+        max_iter = None
+        if len(self.number_of_iteration) == 1:
+            max_iter = self.number_of_iteration[0]
+        else:
+            max_iter = max(self.number_of_iteration)
+        for _ in range(max_iter):
+            self.initiate_population(self.function, self.init_data, self.number_of_scouts)
+            generation = 0
+            scouts_per_gen = []
+            best_current_value = float('inf')
+            best_value = 0
+            best_result = 0
+            best_gen = 0
+            best_value_per_gen = []
+            workers_per_gen = []
+            other_scouts_per_gen = []
+            while generation < self.max_generation:
+                for scout in self.scouts:
+                    scout.calculate_fitness()
+                self.scouts.sort(reverse=False)
+                scouts_per_gen.append(
+                    [(copy.deepcopy(s.f_value), copy.deepcopy(s.param)) for s in self.scouts])
+                if self.scouts[0].f_value < best_current_value:
+                    best_current_value = self.scouts[0].f_value
+                    best_value = self.scouts[0].f_value
+                    best_result = self.scouts[0].param
+                    best_gen = generation
+                best_value_per_gen.append(best_current_value)
+                data_workers = []
+                best_places_workers = []
+                for i in range(self.number_of_best_places):
+                    local_workers = []
+                    for j in range(self.number_of_recruits_for_best):
+                        worker = BeeWorker(self.scouts[0])
+                        worker.search_neighbourhood(self.neigh_size)
+                        local_workers.append(worker)
+                    local_workers.sort(reverse=False)
+                    data_workers.append(local_workers)
+                    self.scouts.pop(0)
+                    best_places_workers.append(local_workers[0])
 
-            for i in range(self.number_of_best_places, self.number_of_chosen_places):
-                local_workers = []
-                for j in range(self.number_of_recruits_for_other):
-                    worker = BeeWorker(self.scouts[0])
-                    worker.search_neighbourhood(self.neigh_size)
-                    local_workers.append(worker)
-                local_workers.sort(reverse=False)
-                data_workers.append(local_workers)
-                self.scouts.pop(0)
-                best_places_workers.append(local_workers[0])
-            self.final_data["workers_per_gen"].append(data_workers)
-            self.final_data["other_scouts_per_gen"].append([])
-            for bee in self.scouts:
-                if random.random() < self.bee_search_prob:
-                    bee.search_local(self.area_size, self.init_data)
-                    self.final_data["other_scouts_per_gen"][generation].append(
-                        (copy.deepcopy(bee.f_value), copy.deepcopy(bee.param)))
-                else:
-                    self.final_data["other_scouts_per_gen"][generation].append(None)
-            for bee in best_places_workers:
-                scout = bee.promote()
-                self.scouts.append(scout)
-            generation += 1
+                for i in range(self.number_of_best_places, self.number_of_chosen_places):
+                    local_workers = []
+                    for j in range(self.number_of_recruits_for_other):
+                        worker = BeeWorker(self.scouts[0])
+                        worker.search_neighbourhood(self.neigh_size)
+                        local_workers.append(worker)
+                    local_workers.sort(reverse=False)
+                    data_workers.append(local_workers)
+                    self.scouts.pop(0)
+                    best_places_workers.append(local_workers[0])
+                workers_per_gen.append(data_workers)
+                other_scouts_per_gen.append([])
+                for bee in self.scouts:
+                    if random.random() < self.bee_search_prob:
+                        bee.search_local(self.area_size, self.init_data)
+                        other_scouts_per_gen[generation].append(
+                            (copy.deepcopy(bee.f_value), copy.deepcopy(bee.param)))
+                    else:
+                        other_scouts_per_gen[generation].append(None)
+                for bee in best_places_workers:
+                    scout = bee.promote()
+                    self.scouts.append(scout)
+                generation += 1
+            self.final_data["best_result_per_iter"].append(best_result)
+            self.final_data["best_value_per_iter"].append(best_value)
+            self.final_data["best_gen_per_iter"].append(best_gen)
+            self.final_data["scouts"].append(scouts_per_gen)
+            self.final_data["workers"].append(workers_per_gen)
+            self.final_data["other_scouts"].append(other_scouts_per_gen)
+            self.final_data["best_value_vec"].append(best_value_per_gen)
+        print((time.time() - t1) / max(self.number_of_iteration))
 
     def plot_stage(self, direction=None):
         max_index = 11
@@ -256,7 +284,7 @@ class BeesAlgorithm(BaseAlg):
         cbar = self.canvas.fig.colorbar(cs)
 
     def plot_scouts(self, ax, gen):
-        for val, par in self.final_data['scouts_per_gen'][gen]:
+        for val, par in self.final_data['scouts'][0][gen]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
@@ -265,7 +293,7 @@ class BeesAlgorithm(BaseAlg):
 
     def plot_areas_with_best(self, ax, gen):
         index = 0
-        for val, par in self.final_data['scouts_per_gen'][gen]:
+        for val, par in self.final_data['scouts'][0][gen]:
             if index < self.best_places:
                 color = 'r'
             elif self.best_places <= index < self.chosen_places:
@@ -284,7 +312,7 @@ class BeesAlgorithm(BaseAlg):
 
     def plot_workers(self, ax, gen):
         index = 0
-        for val, par in self.final_data['scouts_per_gen'][gen]:
+        for val, par in self.final_data['scouts'][0][gen]:
             if index < self.best_places:
                 color = 'r'
             elif self.best_places <= index < self.chosen_places:
@@ -293,7 +321,7 @@ class BeesAlgorithm(BaseAlg):
                 break
             c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
             ax.add_artist(c1)
-            for worker in self.final_data["workers_per_gen"][gen][index]:
+            for worker in self.final_data["workers"][0][gen][index]:
                 ax.plot(worker.param[0], worker.param[1], f'{color}x')
             index += 1
         self.panel.setText(f"For the best bees (red circle), algorithm"
@@ -303,14 +331,14 @@ class BeesAlgorithm(BaseAlg):
                            f" {self.number_of_recruits_for_other} workers.")
 
     def plot_best_workers(self, ax, gen):
-        val, par = self.final_data['scouts_per_gen'][gen][0]
+        val, par = self.final_data['scouts'][0][gen][0]
         color = 'r'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
         ax.add_artist(c1)
         ax.set_xlim(par[0] - self.neigh_size, par[0] + self.neigh_size)
         ax.set_ylim(par[1] - self.neigh_size, par[1] + self.neigh_size)
         first = True
-        for worker in self.final_data["workers_per_gen"][gen][0]:
+        for worker in self.final_data["workers"][0][gen][0]:
             if first:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.005
                 ax.plot(worker.param[0], worker.param[1], f'{color}o', markersize=10.0)
@@ -324,14 +352,14 @@ class BeesAlgorithm(BaseAlg):
                            f" This worker will replace scout, which found this area, in next generation. ")
 
     def plot_chosen_workers(self, ax, gen):
-        val, par = self.final_data['scouts_per_gen'][gen][self.best_places]
+        val, par = self.final_data['scouts'][0][gen][self.best_places]
         color = 'b'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
         ax.add_artist(c1)
         ax.set_xlim(par[0] - self.neigh_size, par[0] + self.neigh_size)
         ax.set_ylim(par[1] - self.neigh_size, par[1] + self.neigh_size)
         first = True
-        for worker in self.final_data["workers_per_gen"][gen][self.best_places]:
+        for worker in self.final_data["workers"][0][gen][self.best_places]:
             if first:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.0001
                 ax.plot(worker.param[0], worker.param[1], f'{color}o', markersize=10.0)
@@ -346,7 +374,7 @@ class BeesAlgorithm(BaseAlg):
 
     def plot_others_scouts(self, ax, gen):
         index = 0
-        for val, par in self.final_data['scouts_per_gen'][gen]:
+        for val, par in self.final_data['scouts'][0][gen]:
             if index >= self.chosen_places:
                 c1 = plt.Circle((par[0], par[1]), self.area_size, color='k', alpha=0.5)
                 ax.add_artist(c1)
@@ -360,8 +388,8 @@ class BeesAlgorithm(BaseAlg):
                            f" of radius {self.area_size} with probability of {self.bee_search_prob}.")
 
     def plot_diff_others_scouts(self, ax, gen):
-        for pair_s, pair_o in zip(self.final_data['scouts_per_gen'][gen][self.chosen_places:],
-                                  self.final_data['other_scouts_per_gen'][gen]):
+        for pair_s, pair_o in zip(self.final_data['scouts'][0][gen][self.chosen_places:],
+                                  self.final_data['other_scouts'][0][gen]):
             ax.plot(pair_s[1][0], pair_s[1][1], 'bo')
             if pair_o is not None:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
@@ -379,23 +407,23 @@ class BeesAlgorithm(BaseAlg):
                            f" (red circle) and corresponding vectors")
 
     def plot_scouts_second(self, ax):
-        for val, par in self.final_data['scouts_per_gen'][1]:
+        for val, par in self.final_data['scouts'][0][1]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
         self.panel.setText(f"These steps are repeated, until number of generation reaches {self.max_generation}.")
 
     def plot_scouts_best(self, ax):
-        for val, par in self.final_data['scouts_per_gen'][self.final_data['best_gen']]:
+        for val, par in self.final_data['scouts'][0][self.final_data['best_gen_per_iter'][0]]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
         self.panel.setText(f"This is the best iteration of the algorithm."
-                           f" Here, the best bee reached value {self.final_data['best_value']:.4f}.")
+                           f" Here, the best bee reached value {self.final_data['best_value_per_iter'][0]:.4f}.")
 
     def plot_best_value(self, ax):
-        time = range(len(self.final_data['best_value_per_gen']))
-        error = list(map(lambda x: x - self.target, self.final_data['best_value_per_gen']))
+        time = range(len(self.final_data['best_value_vec'][0]))
+        error = list(map(lambda x: x - self.target, self.final_data['best_value_vec'][0]))
         ax.plot(time, error)
         ax.set_title("Absolute error between generations")
         ax.set_xlabel("Generation")
@@ -404,19 +432,16 @@ class BeesAlgorithm(BaseAlg):
                            f" of the problem and the best bee found in all generations. ")
 
     def plot_mean_value(self, ax):
-        time = range(len(self.final_data['scouts_per_gen']))
-        values = []
-        for gen in self.final_data['scouts_per_gen']:
-            suma = 0
-            for scout in gen:
-                suma += scout[0]
-            suma /= len(gen)
-            values.append(suma)
-        ax.plot(time, values)
-        ax.set_title("Mean value in each generation")
+        time = range(len(self.final_data['best_value_vec'][0]))
+        for no_it in self.number_of_iteration:
+            values = np.mean(self.final_data['best_value_vec'][:no_it], axis=0)
+            ax.plot(time, values, label=f'{no_it} iterations')
+        ax.set_title(f"Mean of best values in each generation")
         ax.set_xlabel("Generation")
         ax.set_ylabel("Mean value")
-        self.panel.setText(f"This chart shows mean values of all scouts in each generation.")
+        ax.legend()
+        self.panel.setText(f"This chart shows mean of best values"
+                           f" in each generation in {self.number_of_iteration} iterations.")
 
 
 class AntColonySystem(BaseAlg):
