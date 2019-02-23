@@ -93,7 +93,6 @@ class BeesAlgorithm(BaseAlg):
         self.Y = None
         self.Z = None
 
-        # todo multiple iterations
         self.final_data = {"best_result_per_iter": [],
                            "best_value_per_iter": [],
                            "best_gen_per_iter": [],
@@ -124,12 +123,8 @@ class BeesAlgorithm(BaseAlg):
         self.chosen_places = number_of_chosen_places
         self.best_places = number_of_best_places
         self.number_of_iteration = number_of_iteration
-        # self.initiate_population(self.function, self.init_data, number_of_scouts)
 
     def run(self):
-        import time
-        t1 = time.time()
-        max_iter = None
         if len(self.number_of_iteration) == 1:
             max_iter = self.number_of_iteration[0]
         else:
@@ -200,7 +195,7 @@ class BeesAlgorithm(BaseAlg):
             self.final_data["workers"].append(workers_per_gen)
             self.final_data["other_scouts"].append(other_scouts_per_gen)
             self.final_data["best_value_vec"].append(best_value_per_gen)
-        print((time.time() - t1) / max(self.number_of_iteration))
+        self.buffer_base_map()
 
     def plot_stage(self, direction=None):
         max_index = 11
@@ -219,48 +214,27 @@ class BeesAlgorithm(BaseAlg):
         self.canvas.fig.clf()
         ax = self.canvas.fig.add_subplot(111)
 
-        stage = 0  # placeholder
-        if self.index == 0:
-            self.plot_base(ax)
-            self.plot_scouts(ax, stage)
-        elif self.index == 1:
-            self.plot_base(ax)
-            self.plot_areas_with_best(ax, stage)
-        elif self.index == 2:
-            self.plot_base(ax)
-            self.plot_workers(ax, stage)
-        elif self.index == 3:
-            self.plot_base(ax)
-            self.plot_best_workers(ax, stage)
-        elif self.index == 4:
-            self.plot_base(ax)
-            self.plot_chosen_workers(ax, stage)
-        elif self.index == 5:
-            self.plot_base(ax)
-            self.plot_others_scouts(ax, stage)
-        elif self.index == 6:
-            self.plot_base(ax)
-            self.plot_diff_others_scouts(ax, stage)
-        elif self.index == 7:
-            self.plot_base(ax)
-            self.plot_scouts_second(ax)
-        elif self.index == 8:
-            self.plot_base(ax)
-            self.plot_scouts_best(ax)
-        elif self.index == 9:
-            self.plot_best_value(ax)
-        elif self.index == 10:
-            self.plot_mean_value(ax)
-        elif self.index == 11:
-            path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/images/placeholder.png"))
-            im = Image.open(path)
-            self.panel.setText("This is the last slide of the presentation."
-                               " In 'Options' menu you can take a look on another algorithm.")
-            ax.imshow(im)
+        def plot(index):
+            return {
+                0: self.plot_scouts,
+                1: self.plot_areas_with_best,
+                2: self.plot_workers,
+                3: self.plot_best_workers,
+                4: self.plot_chosen_workers,
+                5: self.plot_others_scouts,
+                6: self.plot_diff_others_scouts,
+                7: self.plot_scouts_second,
+                8: self.plot_scouts_best,
+                9: self.plot_best_value,
+                10: self.plot_mean_value,
+                11: self.display_last
+            }.get(index)
+
+        f = plot(self.index)
+        f(ax)
         self.canvas.draw()
 
     def buffer_base_map(self):
-        # todo do this in thread (don't freeze ui)
         res = 500
 
         x = np.linspace(self.init_data[0][0], self.init_data[0][1], res)
@@ -283,17 +257,19 @@ class BeesAlgorithm(BaseAlg):
         cs = ax.contourf(self.X, self.Y, self.Z, levels, cmap=plt.get_cmap('summer'))
         cbar = self.canvas.fig.colorbar(cs)
 
-    def plot_scouts(self, ax, gen):
-        for val, par in self.final_data['scouts'][0][gen]:
+    def plot_scouts(self, ax):
+        self.plot_base(ax)
+        for val, par in self.final_data['scouts'][0][0]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
             ax.text(par[0] + x_offset, par[1], f"{val:.2f}")
         self.panel.setText(f"At first step, create {self.number_of_scouts} bees scouts and randomize their position."
                            f" The current fitness of each bee is displayed above their position.")
 
-    def plot_areas_with_best(self, ax, gen):
+    def plot_areas_with_best(self, ax):
+        self.plot_base(ax)
         index = 0
-        for val, par in self.final_data['scouts'][0][gen]:
+        for val, par in self.final_data['scouts'][0][0]:
             if index < self.best_places:
                 color = 'r'
             elif self.best_places <= index < self.chosen_places:
@@ -310,9 +286,10 @@ class BeesAlgorithm(BaseAlg):
                            f"{self.number_of_best_places} of these bees is selected as the best (red circle),"
                            f" the rest is marked with blue circle.")
 
-    def plot_workers(self, ax, gen):
+    def plot_workers(self, ax):
+        self.plot_base(ax)
         index = 0
-        for val, par in self.final_data['scouts'][0][gen]:
+        for val, par in self.final_data['scouts'][0][0]:
             if index < self.best_places:
                 color = 'r'
             elif self.best_places <= index < self.chosen_places:
@@ -321,7 +298,7 @@ class BeesAlgorithm(BaseAlg):
                 break
             c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
             ax.add_artist(c1)
-            for worker in self.final_data["workers"][0][gen][index]:
+            for worker in self.final_data["workers"][0][0][index]:
                 ax.plot(worker.param[0], worker.param[1], f'{color}x')
             index += 1
         self.panel.setText(f"For the best bees (red circle), algorithm"
@@ -330,15 +307,16 @@ class BeesAlgorithm(BaseAlg):
                            f"The same situation happens for other bees, but we send only"
                            f" {self.number_of_recruits_for_other} workers.")
 
-    def plot_best_workers(self, ax, gen):
-        val, par = self.final_data['scouts'][0][gen][0]
+    def plot_best_workers(self, ax):
+        self.plot_base(ax)
+        val, par = self.final_data['scouts'][0][0][0]
         color = 'r'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
         ax.add_artist(c1)
         ax.set_xlim(par[0] - self.neigh_size, par[0] + self.neigh_size)
         ax.set_ylim(par[1] - self.neigh_size, par[1] + self.neigh_size)
         first = True
-        for worker in self.final_data["workers"][0][gen][0]:
+        for worker in self.final_data["workers"][0][0][0]:
             if first:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.005
                 ax.plot(worker.param[0], worker.param[1], f'{color}o', markersize=10.0)
@@ -351,15 +329,16 @@ class BeesAlgorithm(BaseAlg):
         self.panel.setText(f"From among these bees, for each area, we select the best individual (full circle marker)."
                            f" This worker will replace scout, which found this area, in next generation. ")
 
-    def plot_chosen_workers(self, ax, gen):
-        val, par = self.final_data['scouts'][0][gen][self.best_places]
+    def plot_chosen_workers(self, ax):
+        self.plot_base(ax)
+        val, par = self.final_data['scouts'][0][0][self.best_places]
         color = 'b'
         c1 = plt.Circle((par[0], par[1]), self.neigh_size, color=color, alpha=0.5)
         ax.add_artist(c1)
         ax.set_xlim(par[0] - self.neigh_size, par[0] + self.neigh_size)
         ax.set_ylim(par[1] - self.neigh_size, par[1] + self.neigh_size)
         first = True
-        for worker in self.final_data["workers"][0][gen][self.best_places]:
+        for worker in self.final_data["workers"][0][0][self.best_places]:
             if first:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.0001
                 ax.plot(worker.param[0], worker.param[1], f'{color}o', markersize=10.0)
@@ -372,9 +351,10 @@ class BeesAlgorithm(BaseAlg):
         self.panel.setText(f"From among these bees, for each area, we select the best individual (full circle marker)."
                            f" This worker will replace scout, which found this area, in next generation. ")
 
-    def plot_others_scouts(self, ax, gen):
+    def plot_others_scouts(self, ax):
+        self.plot_base(ax)
         index = 0
-        for val, par in self.final_data['scouts'][0][gen]:
+        for val, par in self.final_data['scouts'][0][0]:
             if index >= self.chosen_places:
                 c1 = plt.Circle((par[0], par[1]), self.area_size, color='k', alpha=0.5)
                 ax.add_artist(c1)
@@ -387,9 +367,10 @@ class BeesAlgorithm(BaseAlg):
         self.panel.setText(f"The other scouts, which hadn't been chosen as best, they can search randomly area"
                            f" of radius {self.area_size} with probability of {self.bee_search_prob}.")
 
-    def plot_diff_others_scouts(self, ax, gen):
-        for pair_s, pair_o in zip(self.final_data['scouts'][0][gen][self.chosen_places:],
-                                  self.final_data['other_scouts'][0][gen]):
+    def plot_diff_others_scouts(self, ax):
+        self.plot_base(ax)
+        for pair_s, pair_o in zip(self.final_data['scouts'][0][0][self.chosen_places:],
+                                  self.final_data['other_scouts'][0][0]):
             ax.plot(pair_s[1][0], pair_s[1][1], 'bo')
             if pair_o is not None:
                 x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
@@ -407,6 +388,7 @@ class BeesAlgorithm(BaseAlg):
                            f" (red circle) and corresponding vectors")
 
     def plot_scouts_second(self, ax):
+        self.plot_base(ax)
         for val, par in self.final_data['scouts'][0][1]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
@@ -414,6 +396,7 @@ class BeesAlgorithm(BaseAlg):
         self.panel.setText(f"These steps are repeated, until number of generation reaches {self.max_generation}.")
 
     def plot_scouts_best(self, ax):
+        self.plot_base(ax)
         for val, par in self.final_data['scouts'][0][self.final_data['best_gen_per_iter'][0]]:
             x_offset = (self.init_data[0][1] - self.init_data[0][0]) * 0.015
             ax.plot(par[0], par[1], 'bo')
@@ -442,6 +425,13 @@ class BeesAlgorithm(BaseAlg):
         ax.legend()
         self.panel.setText(f"This chart shows mean of best values"
                            f" in each generation in {self.number_of_iteration} iterations.")
+
+    def display_last(self, ax):
+        path = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), "resources/images/placeholder.png"))
+        im = Image.open(path)
+        self.panel.setText("This is the last slide of the presentation."
+                           " In 'Settings' menu you can take a look on another algorithm.")
+        ax.imshow(im)
 
 
 class AntColonySystem(BaseAlg):
@@ -513,18 +503,34 @@ class AntColonySystem(BaseAlg):
         self.pheromones[y][x] = new_value
 
     def plot_stage(self, direction=None):
+        max_index = 1
         if direction is None:
             self.index = 0
         elif direction:
+            if self.index == max_index:
+                return
             self.index += 1
         else:
+            if self.index == 0:
+                return
             self.index -= 1
+
+        self.stageChanged.emit(self.index + 1, max_index + 1)
         self.canvas.fig.clf()
         ax = self.canvas.fig.add_subplot(111)
         if self.index == 0:
             self.plot_result_per_gen(ax)
         else:
             self.plot_best_path(ax)
+
+        def plot(index):
+            return {
+                0: self.plot_result_per_gen,
+                1: self.plot_best_path
+            }.get(index)
+
+        f = plot(self.index)
+        f(ax)
         self.canvas.draw()
 
     def plot_result_per_gen(self, ax):
@@ -533,10 +539,9 @@ class AntColonySystem(BaseAlg):
         ax.set_title("Best distance per generations")
         ax.set_xlabel("Generation")
         ax.set_ylabel("Best distance")
-        self.panel.setText(f"Najlepsza wartość: {self.best_cost}\nExcpected: 564")
+        self.panel.setText(f"Najlepsza wartość: {self.best_cost}.")
 
     def plot_best_path(self, ax):
-        # http://www.math.uwaterloo.ca/tsp/vlsi/xqf131.tour.html
         cities = np.array(self.fun.cities)
         cities = cities[self.best_solution, :]
         cities = np.concatenate((cities, [cities[0]]), axis=0)

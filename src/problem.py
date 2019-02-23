@@ -159,8 +159,8 @@ class ProblemTsp(object):
     def __init__(self, data_dict):
         self.title = data_dict["title"]
         self.size = data_dict["size"]
-        self.no_of_cities = 131
-        # self.no_of_cities = data_dict["cities"]
+        # self.no_of_cities = 131
+        self.no_of_cities = data_dict["cities"]
         self.indicators = data_dict["indicators"]
 
         self.cities = None
@@ -173,9 +173,9 @@ class ProblemTsp(object):
         return random.random() * (self.size[1] - self.size[0]) + self.size[0]
 
     def init_problem(self):
-        self.cities = np.loadtxt("./resources/maps/map_237points.csv", delimiter=' ')
-        # self.cities = [(x, y) for (x, y) in zip((self.random_position() for _ in range(self.no_of_cities)),
-        #                                         (self.random_position() for _ in range(self.no_of_cities)))]
+        # self.cities = np.loadtxt("./resources/maps/map_237points.csv", delimiter=' ')
+        self.cities = [(x, y) for (x, y) in zip((self.random_position() for _ in range(self.no_of_cities)),
+                                                (self.random_position() for _ in range(self.no_of_cities)))]
 
         self.dist_matrix = self.create_dist_matrix()
 

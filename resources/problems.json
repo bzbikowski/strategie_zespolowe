@@ -37,7 +37,7 @@
                 -100,
                 100
             ],
-            "cities": 10,
+            "cities": 100,
             "indicators": [
                 "distance"
             ]

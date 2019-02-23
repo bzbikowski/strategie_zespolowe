@@ -18,5 +18,8 @@ Algorithms: ACO, BA, FA, GSO. IWD, CSS, GSA, RFD, SDS
 
 Todo:
 * add documentation (docstring)
-* filter problems based on type of the algorithm
 * add more algorithms from the list
+* progress bar
+* rewrite code for creating problems
+* support for viewing and editing problems for tsp from gui
+* add placeholders and tooltip for text inputs

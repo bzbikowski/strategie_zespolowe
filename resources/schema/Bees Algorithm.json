@@ -45,6 +45,11 @@
       "name": "Probabilty for performing random movement",
       "type": "float",
       "default": "1.0"
+    },
+    {
+      "name": "Number of iterations of the algorithm",
+      "type": "tuple",
+      "default": "(1, 10, 30)"
     }
   ]
 }

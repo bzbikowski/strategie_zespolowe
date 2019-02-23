@@ -13,6 +13,7 @@ import lib.algorithms as alg
 from src.frame import PlotWidget
 from src.popup import ProblemDialog
 from src.problem import Problem, ProblemTsp
+from src.settings import TupleValidator
 
 
 class Ui(QWidget):
@@ -116,7 +117,7 @@ class Ui(QWidget):
         for elem in data["elements"]:
             if "name" not in elem or "type" not in elem or "default" not in elem:
                 return False
-            if elem["type"] not in ["int", "float"]:
+            if elem["type"] not in ["int", "float", "tuple"]:
                 return False
             if elem["type"] == "int":
                 try:
@@ -226,8 +227,9 @@ class Ui(QWidget):
                 val = QDoubleValidator()
                 val.setLocale(lo)
                 text.setValidator(val)
-            else:
-                pass
+            elif element['type'] == 'tuple':
+                text = QLineEdit(element['default'])
+                text.setValidator(TupleValidator())
             layout.addWidget(label)
             layout.addWidget(text)
             self.parametersLayout.addLayout(layout)
@@ -245,8 +247,11 @@ class Ui(QWidget):
                         QMessageBox.warning(self, "Empty field",
                                             "Empty fields must be filled with correct values.")
                         return
-                    if isinstance(grandchild.validator(), QDoubleValidator):
+                    validator = grandchild.validator()
+                    if isinstance(validator, QDoubleValidator):
                         params.append(float(grandchild.text()))
+                    elif isinstance(validator, TupleValidator):
+                        params.append(self.convert_to_tuple(grandchild.text()))
                     else:
                         params.append(int(grandchild.text()))
         try:
@@ -286,6 +291,18 @@ class Ui(QWidget):
 
     def block_layout(self):
         self.setEnabled(False)
+
+    @staticmethod
+    def convert_to_tuple(text):
+        text = "".join(list(text)[1:-1])
+        new = []
+        params = text.split(',')
+        for param in params:
+            try:
+                new.append(int(param))
+            except ValueError:
+                pass
+        return new
 
     def alg_finish(self):
         self.setEnabled(True)
